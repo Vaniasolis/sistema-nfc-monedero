@@ -31,23 +31,19 @@ app.post('/pulseras', async (req, res) => {
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
 
+    // Ejecutamos la inserción en tu tabla pulseras
     const resultado = await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, fecha_registro, tipo_acceso_id, saldo) VALUES ($1, CURRENT_DATE, $2, $3) RETURNING *',
+      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) RETURNING *',
       [codigo_nfc, tipo_acceso_id, saldo]
     );
 
-    // Mandamos el objeto de la primera posición [0] para que Axios lo lea de inmediato
-    res.status(201).json({
-      guardado: true,
-      mensaje: 'Pulsera registrada con éxito',
-      pulsera: resultado.rows[0] 
-    });
+    res.json({ guardado: true, pulsera: resultado.rows[0] });
+
   } catch (error) {
-    console.error("Error en consola del servidor:", error);
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'El código NFC ya se encuentra registrado' });
-    }
-    res.status(500).json({ error: 'Error al registrar la pulsera en la base de datos' });
+    // ⚡ IMPRESCINDIBLE: Esto te imprimirá la falla exacta de PostgreSQL en tu consola negra de VS Code
+    console.error("❌ FALLA REAL EN POSTGRESQL:", error.message);
+    
+    res.status(500).json({ guardado: false, error: error.message });
   }
 });
 
@@ -110,31 +106,60 @@ app.post('/ventas', async (req, res) => {
   try {
     const { codigo_nfc, producto_id } = req.body;
 
+    // A. Buscar el producto y su precio
     const buscarProducto = await pool.query('SELECT * FROM productos WHERE id = $1', [producto_id]);
-    if (buscarProducto.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
-    
+    if (buscarProducto.rows.length === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
     const producto = buscarProducto.rows[0];
-    if (producto.stock <= 0) return res.status(400).json({ error: 'Producto agotado' });
 
+    // B. Buscar la pulsera y su saldo
     const buscarPulsera = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
-    if (buscarPulsera.rows.length === 0) return res.status(404).json({ error: 'Pulsera no registrada' });
-
+    if (buscarPulsera.rows.length === 0) {
+      return res.status(404).json({ error: 'Pulsera no registrada' });
+    }
     const pulsera = buscarPulsera.rows[0];
+
     const precioProducto = parseFloat(producto.precio);
     const saldoActual = parseFloat(pulsera.saldo);
 
-    if (saldoActual < precioProducto) return res.status(400).json({ error: 'Saldo insuficiente' });
+    // C. Verificar si hay stock disponible en el catálogo
+    if (parseInt(producto.stock) <= 0) {
+      return res.status(400).json({ error: 'Producto agotado en el catálogo' });
+    }
 
+    // D. Verificar si le alcanza el dinero al cliente
+    if (saldoActual < precioProducto) {
+      return res.status(400).json({ error: 'Saldo insuficiente en la pulsera' });
+    }
+
+    // E. PROCESAR ACCIONES EN LA BASE DE DATOS (PostgreSQL)
+    
+    // 1. Restar dinero de la pulsera
     const nuevoSaldo = saldoActual - precioProducto;
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
+    
+    // 2. ⚡ ACTUALIZADO: Restar 1 pieza del stock del producto seleccionado en el catálogo
     await pool.query('UPDATE productos SET stock = stock - 1 WHERE id = $1', [producto_id]);
+    
+    // 3. Registrar la venta en tu tabla histórica para el Excel
+    await pool.query(
+      'INSERT INTO ventas (pulsera_id, total, fecha) VALUES ($1, $2, NOW())', 
+      [codigo_nfc, precioProducto]
+    );
 
-    res.json({ exito: true, mensaje: `Venta exitosa de: ${producto.nombre}` });
+    res.json({
+      exito: true,
+      mensaje: `Venta exitosa de: ${producto.nombre}`,
+      saldo_restante: nuevoSaldo
+    });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al procesar la venta' });
+    console.error("Error exacto en la venta:", error);
+    res.status(500).json({ error: 'Error al procesar la venta en la base de datos' });
   }
 });
+
 
 // 🍺 NUEVA RUTA: Registrar un nuevo producto o bebida en el catálogo
 app.post('/productos', async (req, res) => {
@@ -197,6 +222,42 @@ app.put('/pulseras/recargar', async (req, res) => {
       exito: false,
       error: 'Error interno al procesar la recarga de saldo'
     });
+  }
+});
+
+app.get('/reporte-ventas', async (req, res) => {
+  try {
+    // Agrupamos por el valor de la venta para darle el listado acumulado al cliente
+    const consulta = `
+      SELECT total as precio_articulo, COUNT(id) as cantidad_vendida, SUM(total) as total_recaudado
+      FROM ventas
+      GROUP BY total
+      ORDER BY cantidad_vendida DESC;
+    `;
+    const resultado = await pool.query(consulta);
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar el reporte' });
+  }
+});
+
+// 📊 RUTA DE REPORTE: Agrupa por el total vendido y cuenta las cantidades
+// 📊 RUTA DE REPORTE ACTUALIZADA: Consulta directa de todas las transacciones registradas
+app.get('/reporte-ventas', async (req, res) => {
+  try {
+    const consulta = `
+      SELECT id, pulsera_id, total, TO_CHAR(fecha, 'DD/MM/YYYY HH24:MI') as fecha_formateada
+      FROM ventas
+      ORDER BY id DESC;
+    `;
+    const resultado = await pool.query(consulta);
+    
+    // Devolvemos las filas crudas para que React las sume de forma segura
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error("Error al generar el reporte SQL:", error);
+    res.status(500).json({ error: 'Error al generar el reporte en la base de datos' });
   }
 });
 
