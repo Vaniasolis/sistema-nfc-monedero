@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 function App() {
-  
+  const API_URL = 'http://192.168.100.189:3000';
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
-  
-  // 🌍 URL GENÉRICA: Cambiando esta única línea, todo tu sistema se adapta al instante
-  const API_URL = 'http://192.168.100.189:3000'; 
-
 
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
@@ -21,7 +18,7 @@ function App() {
   const [pulseraVenta, setPulseraVenta] = useState('');
   const [productoSeleccionado, setProductoSeleccionado] = useState('');
   
-  // ➕ NUEVOS ESTADOS: Control del modal de productos y sus campos
+  // Estados: Control del modal de productos
   const [mostrarModalProducto, setMostrarModalProducto] = useState(false);
   const [nombreProducto, setNombreProducto] = useState('');
   const [precioProducto, setPrecioProducto] = useState('');
@@ -36,83 +33,94 @@ function App() {
     try {
       const res = await axios.get(`${API_URL}/pulseras`);
       setPulseras(res.data);
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const cargarProductos = async () => {
     try {
       const res = await axios.get(`${API_URL}/productos`);
       setProductos(res.data);
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const guardarPulsera = async (e) => {
-    e.preventDefault();
+  const guardarPulsera = async () => {
     try {
       const res = await axios.post(`${API_URL}/pulseras`, {
         codigo_nfc: codigoNfc,
         tipo_acceso_id: parseInt(tipoAccesoId),
         saldo: parseFloat(saldo)
       });
-      
       if (res.data.guardado) {
-        setCodigoNfc('');
-        setTipoAccesoId('');
-        setSaldo('');
-        setMostrarModal(false);
-        cargarPulseras();
+        setCodigoNfc(''); setTipoAccesoId(''); setSaldo('');
+        setMostrarModal(false); cargarPulseras();
         alert('Pulsera dada de alta correctamente.');
       }
-    } catch (error) {
-      console.error(error);
-      const apiError = error.response?.data?.error || 'Error de conexión con la API';
-      alert(`No se pudo guardar: ${apiError}`);
-    }
+    } catch (e) { alert('Error de conexión con la API'); }
   };
 
-  // ➕ NUEVA FUNCIÓN: Enviar nueva bebida/producto al backend
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post(`${API_URL}/productos`, {
-        nombre: nombreProducto,
-        precio: parseFloat(precioProducto),
-        stock: parseInt(stockProducto)
+        nombre: nombreProducto, precio: parseFloat(precioProducto), stock: parseInt(stockProducto)
       });
-
       if (res.data.guardado) {
-        setNombreProducto('');
-        setPrecioProducto('');
-        setStockProducto('');
-        setMostrarModalProducto(false);
-        cargarProductos(); // Recarga la lista de bebidas inmediatamente
-        alert('¡Bebida/Producto añadido al catálogo con éxito!');
+        setNombreProducto(''); setPrecioProducto(''); setStockProducto('');
+        setMostrarModalProducto(false); cargarProductos();
+        alert('¡Bebida añadida al catálogo con éxito!');
       }
-    } catch (error) {
-      console.error(error);
-      alert('Error al registrar el producto en el catálogo');
-    }
+    } catch (e) { alert('Error al registrar el producto'); }
   };
 
   const procesarVenta = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post(`${API_URL}/ventas`, {
-        codigo_nfc: pulseraVenta,
-        producto_id: parseInt(productoSeleccionado)
+        codigo_nfc: pulseraVenta, producto_id: parseInt(productoSeleccionado)
       });
       alert(res.data.mensaje);
-      setPulseraVenta('');
-      setProductoSeleccionado('');
-      cargarPulseras();
-      cargarProductos();
+      setPulseraVenta(''); setProductoSeleccionado('');
+      cargarPulseras(); cargarProductos();
+    } catch (e) { alert(e.response?.data?.error || 'Error al procesar la venta'); }
+  };
+
+  const descargarExcelProductos = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/reporte-ventas`);
+      const datosReporte = res.data;
+
+      if (!datosReporte || datosReporte.length === 0) {
+        alert("Aún no se han realizado ventas para exportar.");
+        return;
+      }
+
+      // 📊 TOMAMOS LOS DATOS DIRECTOS DE TU PANTALLA Y LES DAMOS NOMBRE PROFESIONAL
+      const datosFormateados = datosReporte.map(item => {
+        // Redondeamos el precio para compararlo numéricamente de forma segura
+        const precioNum = Math.round(parseFloat(item.precio_articulo));
+        let nombreBebida = `Bebida de $${precioNum}`;
+        
+        if (precioNum === 250) nombreBebida = "Wisky";
+        if (precioNum === 180) nombreBebida = "Cerveza";
+        if (precioNum === 200) nombreBebida = "Piña Colada";
+
+        return {
+          "Bebida / Artículo": nombreBebida,
+          "Precio Unitario ($)": precioNum,
+          "Cantidad Total Vendida": `${item.cantidad_vendida} pzas`,
+          "Monto Recaudado Total ($)": parseFloat(item.total_recaudado)
+        };
+      });
+
+      // Generamos el archivo físico de Excel
+      const hoja = XLSX.utils.json_to_sheet(datosFormateados);
+      const libro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libro, hoja, "Listado de Ventas Totales");
+
+      XLSX.writeFile(libro, "Reporte_Ventas_Final.xlsx");
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.error || 'Error al procesar la venta');
+      alert("Error al procesar y descargar el reporte de ventas.");
     }
   };
 
@@ -126,40 +134,11 @@ function App() {
   return (
     <div style={{ padding: '20px', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       <h1>Sistema NFC</h1>
-
-      {/* 🧭 BARRA DE PESTAÑAS (TABS) */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #ccc', paddingBottom: '10px' }}>
-        <button 
-          onClick={() => setPestañaActiva('pulseras')}
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            backgroundColor: pestañaActiva === 'pulseras' ? '#007bff' : '#f0f0f0',
-            color: pestañaActiva === 'pulseras' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '5px',
-            fontWeight: 'bold'
-          }}
-        >
-          🎟️ Control de Pulseras
-        </button>
-        <button 
-          onClick={() => setPestañaActiva('productos')}
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            backgroundColor: pestañaActiva === 'productos' ? '#007bff' : '#f0f0f0',
-            color: pestañaActiva === 'productos' ? 'white' : '#333',
-            border: 'none',
-            borderRadius: '5px',
-            fontWeight: 'bold'
-          }}
-        >
-          🍔 Punto de Venta y Catálogo
-        </button>
+        <button onClick={() => setPestañaActiva('pulseras')} style={{ padding: '10px 20px', cursor: 'pointer', backgroundColor: pestañaActiva === 'pulseras' ? '#007bff' : '#f0f0f0', color: pestañaActiva === 'pulseras' ? 'white' : '#333', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>🎟️ Control de Pulseras</button>
+        <button onClick={() => setPestañaActiva('productos')} style={{ padding: '10px 20px', cursor: 'pointer', backgroundColor: pestañaActiva === 'productos' ? '#007bff' : '#f0f0f0', color: pestañaActiva === 'productos' ? 'white' : '#333', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>🍔 Punto de Venta y Catálogo</button>
       </div>
 
-      {/* 📊 CONTENIDO DE LA PESTAÑA: PULSERAS */}
       {pestañaActiva === 'pulseras' && (
         <div>
           <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
@@ -168,152 +147,95 @@ function App() {
               <h1 style={{ margin: '10px 0 0 0' }}>{pulseras.length}</h1>
             </div>
           </div>
-
           <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f2f2f2' }}>
-                <th>Codigo NFC</th>
-                <th>Tipo de Acceso</th>
-                <th>Saldo Disponible</th>
-              </tr>
+              <tr style={{ backgroundColor: '#f2f2f2' }}><th>Codigo NFC</th><th>Tipo de Acceso</th><th>Saldo Disponible</th><th>Acciones</th></tr>
             </thead>
             <tbody>
               {pulseras.map((p) => (
-  <tr key={p.codigo_nfc}>
-    <td>{p.codigo_nfc}</td>
-    <td>{obtenerTextoAcceso(p.tipo_acceso_id)}</td>
-    <td style={{ fontWeight: 'bold', color: '#28a745' }}>${p.saldo}</td>
-    {/* ➕ NUEVA CELDA DE ACCIÓN DE RECARGA */}
-    <td>
-      <button
-        onClick={async () => {
-          const monto = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
-          if (!monto || isNaN(monto) || parseFloat(monto) <= 0) {
-            alert('Por favor, ingresa un monto válido mayor a 0.');
-            return;
-          }
-          try {
-            // Usamos la variable dinámica API_URL que creamos antes
-            await axios.put(`${API_URL}/pulseras/recargar`, {
-              codigo_nfc: p.codigo_nfc,
-              monto: parseFloat(monto)
-            });
-            alert('¡Recarga exitosa!');
-            cargarPulseras(); // Recarga la tabla con el nuevo saldo al instante
-          } catch (error) {
-            console.error(error);
-            alert('No se pudo procesar la recarga.');
-          }
-        }}
-        style={{ padding: '5px 10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}
-      >
-        💰 Recargar
-      </button>
-    </td>
-
+                <tr key={p.codigo_nfc}>
+                  <td>{p.codigo_nfc}</td><td>{obtenerTextoAcceso(p.tipo_acceso_id)}</td><td style={{ fontWeight: 'bold', color: '#28a745' }}>${p.saldo}</td>
+                  <td>
+                    <button type="button" onClick={async () => {
+                      const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
+                      if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
+                      try {
+                        await axios.put(`${API_URL}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
+                        alert('¡Recarga exitosa!'); cargarPulseras();
+                      } catch (e) { alert('No se pudo procesar la recarga.'); }
+                    }} style={{ padding: '5px 10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>💰 Recargar</button>
+                  </td>
                 </tr>
               ))}
-              {pulseras.length === 0 && (
-                <tr>
-                  <td colSpan="3">No hay pulseras registradas.</td>
-                </tr>
-              )}
-              
+              {pulseras.length === 0 && <tr><td colSpan="4">No hay pulseras registradas.</td></tr>}
             </tbody>
           </table>
-
-          {/* BOTÓN FLOTANTE REGISTRO PULSERAS */}
-          <button 
-            onClick={() => setMostrarModal(true)}
-            style={{
-              position: 'fixed',
-              bottom: '30px',
-              right: '30px',
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              backgroundColor: '#007bff',
-              color: 'white',
-              fontSize: '30px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0px 4px 10px rgba(0,0,0,0.2)',
-              zIndex: 999
-            }}
-          >
-            +
-          </button>
+          <button onClick={() => setMostrarModal(true)} style={{ position: 'fixed', bottom: '30px', right: '30px', width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', fontSize: '30px', border: 'none', cursor: 'pointer', boxShadow: '0px 4px 10px rgba(0,0,0,0.2)', zIndex: 999 }}>+</button>
         </div>
       )}
 
-      {/* 🛒 CONTENIDO DE LA PESTAÑA: PRODUCTOS */}
       {pestañaActiva === 'productos' && (
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
-          
-          {/* Módulo de Venta Directa */}
           <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '10px', width: '350px', backgroundColor: '#fdfdfd' }}>
             <h3 style={{ marginTop: 0 }}>Simulador de Cobro</h3>
             <form onSubmit={procesarVenta} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontWeight: 'bold' }}>Escanear/Ingresar Pulsera:</label>
-                <input 
-                  type="text" 
-                  value={pulseraVenta}
-                  onChange={(e) => setPulseraVenta(e.target.value)}
-                  placeholder="Ej: NFC0001"
-                  required
-                  style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}
-                />
+                <input type="text" value={pulseraVenta} onChange={(e) => setPulseraVenta(e.target.value)} placeholder="Ej: NFC0001" required style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }} />
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontWeight: 'bold' }}>Seleccionar Producto:</label>
-                <select 
-                  value={productoSeleccionado}
-                  onChange={(e) => setProductoSeleccionado(e.target.value)}
-                  required
-                  style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: 'white' }}
-                >
+                <select value={productoSeleccionado} onChange={(e) => setProductoSeleccionado(e.target.value)} required style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc', backgroundColor: 'white' }}>
                   <option value="">-- Seleccione un artículo --</option>
-                  {productos.map((prod) => (
-                    <option key={prod.id} value={prod.id}>
-                      {prod.nombre} (${prod.precio})
-                    </option>
-                  ))}
+                  {productos.map((prod) => <option key={prod.id} value={prod.id}>{prod.nombre} (${prod.precio})</option>)}
                 </select>
               </div>
-
-              <button 
-                type="submit"
-                style={{ padding: '10px', borderRadius: '5px', border: 'none', backgroundColor: '#28a745', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                Confirmar Compra
-              </button>
+              <button type="submit" style={{ padding: '10px', borderRadius: '5px', border: 'none', backgroundColor: '#28a745', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>Confirmar Compra</button>
             </form>
           </div>
 
-          {/* Tabla de Inventario de Productos */}
           <div style={{ flex: 1, minWidth: '400px' }}>
-            {/* ➕ CONTENEDOR CON TÍTULO Y EL NUEVO BOTÓN PARA AGREGAR PRODUCTOS */}
-            <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '15px', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', justifyContent: 'space-between' }}>
               <h3 style={{ margin: 0 }}>Catálogo de Alimentos y Bebidas</h3>
-              <button 
-                onClick={() => setMostrarModalProducto(true)}
-                style={{
-                  padding: '8px 15px',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
-                }}
-              >
-                ➕ Añadir Bebida / Artículo
-              </button>
-            </div>
+    
+    {/* 📥 CONTENEDOR DE BOTONES (AQUÍ SE AGREGA EL BOTÓN AZUL) */}
+    <div style={{ display: 'flex', gap: '10px' }}>
+      <button
+        type="button"
+        onClick={descargarExcelProductos}
+        style={{
+          padding: '8px 15px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}
+      >
+        📥 Descargar Reporte Excel
+      </button>
 
-            <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+      <button 
+        type="button"
+        onClick={() => setMostrarModalProducto(true)}
+        style={{
+          padding: '8px 15px',
+          backgroundColor: '#28a745',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}
+      >
+        ➕ Añadir Bebida / Articulo
+      </button>
+    </div>
+  </div>
+
+  <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+
               <thead>
                 <tr style={{ backgroundColor: '#f2f2f2' }}>
                   <th>ID</th>
