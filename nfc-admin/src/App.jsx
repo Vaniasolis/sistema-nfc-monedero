@@ -3,8 +3,9 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 URL LOCAL PARA PRUEBAS EN TU COMPUTADORA
-  const API_URL = 'http://localhost:3000';
+  // 🌍 UNIFICADO: Cambiamos a la IP real para que tu navegador y tu backend se entiendan por completo
+  const API_URL = 'http://192.168.100.189:3000';
+
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
 
   // Estados de Pulseras
@@ -260,6 +261,44 @@ function App() {
         </div>
       )}
 
+      <button
+  onClick={async () => {
+    // ⚠️ Primera confirmación de seguridad
+    const confirmar1 = window.confirm("¿Estás SEGURO de que deseas finalizar el evento? Esto borrará todas las pulseras y el historial de Excel.");
+    if (!confirmar1) return;
+
+    // ⚠️ Segunda confirmación de seguridad para evitar accidentes catastróficos
+    const confirmar2 = prompt("Para confirmar la eliminación absoluta, escribe la palabra: REINICIAR");
+    if (confirmar2 !== "REINICIAR") {
+      alert("Confirmación incorrecta. El evento no ha sido modificado.");
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_URL}/api/sistema/reiniciar-evento`);
+      alert(res.data.mensaje);
+      
+      // Recargamos las tablas para que la pantalla se ponga en ceros al instante
+      cargarPulseras();
+      cargarProductos();
+    } catch (error) {
+      alert("Error al intentar reiniciar el sistema.");
+    }
+  }}
+  style={{
+    padding: '20px 20px',
+    cursor: 'pointer',
+    backgroundColor: '#dc3545', // Color rojo de advertencia
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    fontWeight: 'bold',
+    marginLeft: 'auto' // Lo empuja al extremo derecho de la barra
+  }}
+>
+  🧹 Finalizar y Limpiar Evento
+</button>
+
      {/* 🛒 CONTENIDO DE LA PESTAÑA: PRODUCTOS */}
       {pestañaActiva === 'productos' && (
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
@@ -289,16 +328,48 @@ function App() {
                 <button type="button" onClick={() => setMostrarModalProducto(true)} style={{ padding: '8px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>➕ Añadir Bebida / Articulo</button>
               </div>
             </div>
-            <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+                        <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f2f2f2' }}><th>ID</th><th>Nombre del Producto</th><th>Precio</th><th>Stock disponible</th></tr>
+                <tr style={{ backgroundColor: '#f2f2f2' }}>
+                  <th>ID</th>
+                  <th>Nombre del Producto</th>
+                  <th>Precio</th>
+                  <th>Stock disponible</th>
+                  <th>Acción</th> {/* ➕ AGREGAMOS ESTA CABECERA */}
+                </tr>
               </thead>
               <tbody>
                 {productos.map((prod) => (
-                  <tr key={prod.id}><td>{prod.id}</td><td style={{ textAlign: 'left' }}>{prod.nombre}</td><td style={{ fontWeight: 'bold' }}>${prod.precio}</td><td>{prod.stock} pzas</td></tr>
+                  <tr key={prod.id}>
+                    <td>{prod.id}</td>
+                    <td style={{ textAlign: 'left' }}>{prod.nombre}</td>
+                    <td style={{ fontWeight: 'bold' }}>${prod.precio}</td>
+                    <td>{prod.stock} pzas</td>
+                    {/* ➕ AGREGAMOS ESTE BOTÓN INDIVIDUAL DE BORRADO */}
+                    <td>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (window.confirm(`¿Deseas quitar ${prod.nombre} del catálogo?`)) {
+                            try {
+                              await axios.delete(`${API_URL}/productos/${prod.id}`);
+                              cargarProductos();
+                            } catch (err) {
+                              alert("No puedes borrar esta bebida porque ya se vendió en este evento. Si deseas quitarla, debes usar el botón general de reiniciar evento.");
+                            }
+                          }
+                        }}
+                        style={{ padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}
+                      >
+                        🗑️ Quitar
+                      </button>
+                    </td>
+                  </tr>
                 ))}
+                {productos.length === 0 && <tr><td colSpan="5">No hay productos en el catálogo.</td></tr>}
               </tbody>
             </table>
+
           </div>
         </div>
       )}
