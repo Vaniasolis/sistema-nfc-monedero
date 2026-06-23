@@ -3,9 +3,11 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 IMPORTANTE: Deja la IP de tu Wi-Fi aquí para que las Tablets y Celulares se conecten sin cables
-  const API_URL = 'http://192.168.100.189:3000';
+  // 🌍 CONEXIÓN LOCAL TEMPORAL: Esto desbloqueará el canal de comunicación en tu PC al instante
+  const API_URL = 'http://localhost:3000';
+
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
+
 
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
@@ -140,8 +142,8 @@ function App() {
     if (id === 1) return 'General'; 
     if (id === 2) return 'VIP'; 
     if (id === 3) return 'Cover'; 
-    if (id === 4) return 'Cortesía'; 
-    if (id === 5) return 'Staff'; 
+    if (id === 4) return 'Backstage'; 
+    if (id === 5) return 'coCortesia'; 
     return 'Otro';
   };
 
@@ -288,7 +290,7 @@ function App() {
                 <label style={{ fontWeight: 'bold', color: '#495057' }}>Tipo de Acceso:</label>
                 <select value={tipoAccesoId} onChange={(e) => setTipoAccesoId(e.target.value)} required style={{ padding: '12px', borderRadius: '6px', border: '1px solid #ced4da', backgroundColor: 'white', fontSize: '16px' }}>
                   <option value="">-- Seleccione un acceso --</option>
-                  <option value="1">General</option><option value="2">VIP</option><option value="3">Cover</option><option value="4">Cortesía</option><option value="5">Staff</option>
+                  <option value="1">General</option><option value="2">VIP</option><option value="3">Cover</option><option value="4">Backstage</option><option value="5">Cortesia</option>
                 </select>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>

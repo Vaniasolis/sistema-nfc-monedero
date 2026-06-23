@@ -1,17 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
+const { Pool } = require('pg');
 
 const app = express();
+
+// 🌍 CONECTADO A INTERNET: Usamos la ruta exacta de tu base de datos en Neon Cloud
+const pool = new Pool({
+  connectionString: 'postgresql://neondb_owner:ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+});
 
 app.use(cors());
 app.use(express.json());
 
-const COSTO_ACCESO = 20.00;
-
-app.get('/', (req, res) => {
-  res.send('API NFC de Pulseras funcionando');
-});
+// ... (Aquí ya continúan tus rutas de app.get, app.post, etc. hacia abajo)
 
 // 1. OBTENER TODAS LAS PULSERAS
 app.get('/pulseras', async (req, res) => {
