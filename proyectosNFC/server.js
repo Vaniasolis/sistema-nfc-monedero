@@ -261,9 +261,84 @@ app.get('/reporte-ventas', async (req, res) => {
   }
 });
 
-// ⚡ MODIFICADO: '0.0.0.0' le ordena a Node.js escuchar las peticiones de tu celular Samsung S25
-app.listen(3000, '0.0.0.0', () => {
-  console.log('Servidor iniciado en puerto 3000 y abierto a la red local');
+// 🧹 RUTA DE REINICIO: Vacía el historial de compras y las pulseras para un nuevo evento
+app.post('/api/sistema/reiniciar-evento', async (req, res) => {
+  try {
+    // 1. Vaciamos primero la tabla de ventas (historial del Excel)
+    await pool.query('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
+
+    // 2. Vaciamos la tabla de pulseras para borrar los saldos viejos
+    await pool.query('TRUNCATE TABLE pulseras CASCADE;');
+
+    // 3. Opcional: Si quieres reiniciar el stock de tus productos a 500 pzas automáticamente:
+    await pool.query('UPDATE productos SET stock = 500;');
+
+    res.json({
+      exito: true,
+      mensaje: '¡El sistema ha sido reiniciado con éxito! Listo para el siguiente evento.'
+    });
+
+  } catch (error) {
+    console.error("Error al reiniciar el evento:", error);
+    res.status(500).json({ 
+      exito: false, 
+      error: 'No se pudo limpiar el sistema de forma segura' 
+    });
+  }
 });
 
+    // ... Aquí terminan tus otras rutas anteriores ...
 
+    // 🧹 RUTA DE REINICIO TOTAL: Vacía absolutamente todo el sistema en ceros
+    // 🧹 RUTA DE REINICIO TOTAL CORREGIDA
+app.post('/api/sistema/reiniciar-evento', async (req, res) => {
+  try {
+    // 1. Vaciamos el historial de compras
+    await pool.query('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
+
+    // 2. Vaciamos las pulseras y saldos
+    await pool.query('TRUNCATE TABLE pulseras CASCADE;');
+
+    // ⚡ ESTA ES LA LÍNEA CLAVE CORREGIDA:
+    // Borra todas las bebidas y reinicia los IDs a 1 sin que PostgreSQL lo bloquee
+    await pool.query('TRUNCATE TABLE productos RESTART IDENTITY CASCADE;');
+
+    res.json({
+      exito: true,
+      mensaje: '¡El sistema completo ha sido reiniciado! Las pulseras, ventas y el catálogo de productos están en ceros.'
+    });
+
+  } catch (error) {
+    console.error("Error al reiniciar el evento:", error);
+    res.status(500).json({ exito: false, error: 'No se pudo limpiar el sistema' });
+  }
+});
+
+// 🗑️ RUTA PARA ELIMINAR UN SOLO PRODUCTO POR ID
+app.delete('/productos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM productos WHERE id = $1', [id]);
+    res.json({ exito: true, mensaje: 'Producto eliminado del catálogo' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'No se puede eliminar porque este producto ya fue vendido' });
+  }
+});
+
+// 🗑️ RUTA PARA ELIMINAR UN SOLO PRODUCTO POR ID
+app.delete('/productos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM productos WHERE id = $1', [id]);
+    res.json({ exito: true, mensaje: 'Producto eliminado del catálogo' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'No se puede eliminar porque este producto ya fue vendido' });
+  }
+});
+
+// ⚡ MODIFICADO: Agregamos '0.0.0.0' para abrir el backend a la IP de tu Wi-Fi
+app.listen(3000, '0.0.0.0', () => {
+  console.log('Servidor corriendo de forma global en el puerto 3000');
+});
