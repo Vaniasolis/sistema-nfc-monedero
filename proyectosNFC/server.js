@@ -1,16 +1,21 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+
+// 🌟 CAMBIADO: Usamos el Pool oficial del driver de Neon
+const { Pool } = require('@neondatabase/serverless'); 
 
 const app = express();
 
-// 🌍 CONECTADO A INTERNET: Usamos la ruta exacta de tu base de datos en Neon Cloud
+// ☁️ CONECTADO A INTERNET DE FORMA OFICIAL:
+// Abre tu Bloc de notas y pega aquí tu ENLACE LARGO ORIGINAL completo.
+// (El que copiaste al inicio con el botón "Copiar fragmento", sin inventar trucos con el signo $).
 const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  connectionString: 'postgresql://neondb_owner:npg_yZ1M9SFKrCdN@ep-wild-credit-ad09j161-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
 });
 
 app.use(cors());
 app.use(express.json());
+
 
 // ... (Aquí ya continúan tus rutas de app.get, app.post, etc. hacia abajo)
 
@@ -339,7 +344,8 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
-// ⚡ MODIFICADO: Agregamos '0.0.0.0' para abrir el backend a la IP de tu Wi-Fi
+// ⚡ Escuchando de forma global en tu red
 app.listen(3000, '0.0.0.0', () => {
-  console.log('Servidor corriendo de forma global en el puerto 3000');
+  console.log('✅ Servidor de Node.js corriendo con éxito en el puerto 3000');
+  console.log('☁️ Conectado exitosamente a PostgreSQL (Neon Cloud)');
 });

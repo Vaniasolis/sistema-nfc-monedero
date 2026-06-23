@@ -3,11 +3,10 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 CONEXIÓN LOCAL TEMPORAL: Esto desbloqueará el canal de comunicación en tu PC al instante
-  const API_URL = 'http://localhost:3000';
+  // 🌍 CONECTADO A TU RED WI-FI REAL
+  const API_URL = 'http://192.168.100.189:3000';
 
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
-
 
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
