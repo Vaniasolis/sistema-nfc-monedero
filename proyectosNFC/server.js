@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-// 🌟 IMPORTACIÓN MODERNA: Traemos la función nativa 'neon' recomendada para internet
+// 🌟 FUNCIÓN NATIVA DE NEON
 const { neon } = require('@neondatabase/serverless');
 
 const app = express();
@@ -25,15 +25,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// ☁️ CONEXIÓN DE BAJA LATENCIA A NEON CLOUD:
-// Inicializamos el cliente nativo usando tu variable de entorno de Railway
+// ☁️ CONEXIÓN DE BAJA LATENCIA A NEON CLOUD
 const sql = neon(process.env.DATABASE_URL);
 
 // 🎟️ RUTAS DE PULSERAS
 app.get('/pulseras', async (req, res) => {
   try {
-    // Consultas súper rápidas usando la sintaxis nativa de Neon
-    const filas = await sql('SELECT * FROM pulseras ORDER BY fecha_registro DESC;');
+    // 🌟 CORREGIDO: Usamos sql.query para la lectura limpia de las tablas
+    const filas = await sql.query('SELECT * FROM pulseras ORDER BY fecha_registro DESC;');
     res.json(filas);
   } catch (err) {
     console.error(err);
@@ -44,9 +43,8 @@ app.get('/pulseras', async (req, res) => {
 app.post('/pulseras', async (req, res) => {
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
-    
-    // Inyección segura utilizando marcadores de posición estándar ($1, $2, etc.)
-    await sql(
+    // 🌟 CORREGIDO: Usamos sql.query para insertar con marcadores de posición
+    await sql.query(
       'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
       [codigo_nfc, parseInt(tipo_acceso_id), parseFloat(saldo)]
     );
@@ -60,7 +58,8 @@ app.post('/pulseras', async (req, res) => {
 app.put('/pulseras/recargar', async (req, res) => {
   try {
     const { codigo_nfc, monto } = req.body;
-    await sql('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;', [parseFloat(monto), codigo_nfc]);
+    // 🌟 CORREGIDO: Usamos sql.query
+    await sql.query('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;', [parseFloat(monto), codigo_nfc]);
     res.json({ exito: true });
   } catch (err) {
     console.error(err);
@@ -71,7 +70,8 @@ app.put('/pulseras/recargar', async (req, res) => {
 // 🍔 RUTAS DE CATÁLOGO Y MENÚ
 app.get('/productos', async (req, res) => {
   try {
-    const filas = await sql('SELECT * FROM productos ORDER BY id ASC;');
+    // 🌟 CORREGIDO: Usamos sql.query para jalar los productos
+    const filas = await sql.query('SELECT * FROM productos ORDER BY id ASC;');
     res.json(filas);
   } catch (err) {
     console.error(err);
@@ -82,7 +82,7 @@ app.get('/productos', async (req, res) => {
 app.post('/productos', async (req, res) => {
   try {
     const { nombre, precio, stock } = req.body;
-    // 🌟 CORREGIDO: Agregamos .query
+    // 🌟 CORREGIDO: Usamos sql.query
     await sql.query(
       'INSERT INTO productos (nombre, precio, stock) VALUES ($1, $2, $3);',
       [nombre, parseFloat(precio), parseInt(stock)]
@@ -97,7 +97,7 @@ app.post('/productos', async (req, res) => {
 app.delete('/productos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // 🌟 CORREGIDO: Agregamos .query
+    // 🌟 CORREGIDO: Usamos sql.query
     await sql.query('DELETE FROM productos WHERE id = $1;', [parseInt(id)]);
     res.json({ exito: true });
   } catch (err) {
@@ -111,7 +111,7 @@ app.post('/ventas', async (req, res) => {
   try {
     const { codigo_nfc, producto_id } = req.body;
     
-    // 🌟 CORREGIDO: Agregamos .query a todas las consultas de la venta
+    // 🌟 CORREGIDO: Usamos sql.query en las consultas internas
     const pulseras = await sql.query('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
     if (pulseras.length === 0) return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
     
@@ -143,7 +143,8 @@ app.get('/reporte-ventas', async (req, res) => {
       JOIN productos p ON v.total = p.precio
       GROUP BY p.precio;
     `;
-    const filas = await sql(consulta);
+    // 🌟 CORREGIDO: Usamos sql.query
+    const filas = await sql.query(consulta);
     res.json(filas);
   } catch (err) {
     console.error(err);
@@ -153,9 +154,10 @@ app.get('/reporte-ventas', async (req, res) => {
 
 app.post('/api/sistema/reiniciar-evento', async (req, res) => {
   try {
-    await sql('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
-    await sql('TRUNCATE TABLE pulseras CASCADE;');
-    await sql('TRUNCATE TABLE productos RESTART IDENTITY CASCADE;');
+    // 🌟 CORREGIDO: Usamos sql.query
+    await sql.query('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
+    await sql.query('TRUNCATE TABLE pulseras CASCADE;');
+    await sql.query('TRUNCATE TABLE productos RESTART IDENTITY CASCADE;');
     res.json({ exito: true, mensaje: '¡El sistema completo ha sido reiniciado en internet!' });
   } catch (err) {
     console.error(err);
