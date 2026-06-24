@@ -4,17 +4,20 @@ const { Pool } = require('@neondatabase/serverless');
 
 const app = express();
 
-// ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON
-const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?sslmode=require',
-});
-
+// 1. 🌍 CONFIGURACIÓN DE PERMISOS CORS ULTRALIBRE (Debe ir obligatoriamente arriba de todo)
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// 2. ⚡ TRADUCTOR DE JSON (Vital para leer tus formularios)
 app.use(express.json());
+
+// 3. ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON
+const pool = new Pool({
+  connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?options=endpoint%3Dep-wild-credit-ad09j161&sslmode=require',
+});
 
 // 🎟️ RUTAS DE PULSERAS
 app.get('/pulseras', async (req, res) => {
@@ -129,7 +132,6 @@ app.get('/reporte-ventas', async (req, res) => {
   }
 });
 
-// 🧹 REINICIO TOTAL
 app.post('/api/sistema/reiniciar-evento', async (req, res) => {
   try {
     await pool.query('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');

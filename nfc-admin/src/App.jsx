@@ -30,37 +30,31 @@ function App() {
     cargarProductos(); 
   }, []);
 
+    // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
   const cargarPulseras = async () => {
-    try {
-      const respuesta = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${NEON_PASSWORD}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: 'SELECT * FROM pulseras ORDER BY fecha_registro DESC;' })
-      });
-      const datos = await respuesta.json();
-      if (datos && datos.rows) {
-        setPulseras(datos.rows);
-      }
+    try { 
+      // Le pedimos la lista a tu servidor en internet de forma limpia
+      const res = await axios.get(`${API_URL}/pulseras`); 
+      setPulseras(res.data); 
     } catch (e) { 
-      console.error("Error de lectura en Neon:", e); 
+      console.error("Error al cargar pulseras desde la nube:", e); 
     }
   };
 
+  // 🍔 FUNCIÓN CORRECTA PARA LEER LAS BEBIDAS DESDE RAILWAY
   const cargarProductos = async () => {
     try { 
+      // Le pedimos el menú a tu servidor en internet
       const res = await axios.get(`${API_URL}/productos`); 
       setProductos(res.data); 
     } catch (e) { 
-      console.error(e); 
+      console.error("Error al cargar productos desde la nube:", e); 
     }
   };
 
-    const guardarPulsera = async () => {
+    // ➕ FUNCIÓN CORRECTA PARA REGISTRAR EN LA NUBE
+  const guardarPulsera = async () => {
     try {
-      // 🚀 Mandamos los datos a tu servidor de Railway mediante Axios
       const res = await axios.post(`${API_URL}/pulseras`, {
         codigo_nfc: codigoNfc,
         tipo_acceso_id: parseInt(tipoAccesoId),
@@ -73,16 +67,16 @@ function App() {
         setSaldo('');
         setMostrarModal(false);
         
-        // Recargamos la tabla desde internet
+        // Volvemos a leer internet para actualizar la pantalla
         cargarPulseras();
         alert('¡Pulsera guardada con éxito en la nube!');
       }
     } catch (e) {
-      console.error(e);
+      console.error("Falla al guardar:", e);
       alert('Error de red al conectar con el servidor de Railway');
     }
   };
-
+ 
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
@@ -115,7 +109,25 @@ function App() {
       setPulseraVenta(''); 
       setProductoSeleccionado(''); 
       cargarPulseras(); 
-      cargarProductos();
+      const cargarPulseras = async () => {
+    try {
+      const respuesta = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NEON_PASSWORD}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: 'SELECT * FROM pulseras ORDER BY fecha_registro DESC;' })
+      });
+      const datos = await respuesta.json();
+      if (datos && datos.rows) {
+        setPulseras(datos.rows);
+      }
+    } catch (e) { 
+      console.error("Error de lectura en Neon:", e); 
+    }
+  };
+rgarProductos();
     } catch (e) { 
       alert(e.response?.data?.error || 'Error en la venta'); 
     }
