@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.com",
+  "build": {
+    "builder": "NIXPACKS",
+    "rootDirectory": "proyectosNFC"
+  },
+  "deploy": {
+    "startCommand": "node server.js",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
