@@ -3,11 +3,10 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 ENLACE REAL DE INTERNET (Corregido y enrutado a tu propio servidor en la nube):
-  const API_URL = 'https://api-cashless-vj.up.railway.app'; 
+  // 🌍 ENLACE REAL Y ACTIVO DE TU PANEL DE RAILWAY:
+  const API_URL = 'https://railway.app';
 
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
-
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
