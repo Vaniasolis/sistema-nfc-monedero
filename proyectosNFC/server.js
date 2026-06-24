@@ -13,6 +13,7 @@ app.use(cors({
 
 // 2. ⚡ TRADUCTOR DE JSON (Vital para leer tus formularios)
 app.use(express.json());
+app.options('*', cors());
 
 // 3. ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON
 const pool = new Pool({
