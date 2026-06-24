@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('@neondatabase/serverless');
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_NAME:', process.env.DB_NAME);
+console.log('DB_USER:', process.env.DB_USER);
 
 const app = express();
 
@@ -29,7 +32,7 @@ app.use(express.json());
 
 // ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON (Déjala tal cual está aquí abajo...)
 const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?options=endpoint%3Dep-wild-credit-ad09j161&sslmode=require',
+  connectionString: process.env.DATABASE_URL,
 });
 
 
