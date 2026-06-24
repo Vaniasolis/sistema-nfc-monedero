@@ -9,7 +9,11 @@ const pool = new Pool({
   connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?sslmode=require',
 });
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // 🎟️ RUTAS DE PULSERAS
