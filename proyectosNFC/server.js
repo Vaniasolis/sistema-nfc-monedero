@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('@neondatabase/serverless');
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_NAME:', process.env.DB_NAME);
-console.log('DB_USER:', process.env.DB_USER);
+const { Pool, neonConfig } = require('@neondatabase/serverless'); // ⚡ Agregamos 'neonConfig' aquí
+
+// 🌟 LA REGLA DE ORO DE NEON: Obliga al driver a usar canales de baja latencia en internet
+neonConfig.poolQueryViaFetch = true; 
 
 const app = express();
 
