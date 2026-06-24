@@ -1,49 +1,43 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool, neonConfig } = require('@neondatabase/serverless'); // ⚡ Agregamos 'neonConfig' aquí
-
-// 🌟 LA REGLA DE ORO DE NEON: Obliga al driver a usar canales de baja latencia en internet
-neonConfig.poolQueryViaFetch = true; 
+// 🌟 IMPORTACIÓN MODERNA: Traemos la función nativa 'neon' recomendada para internet
+const { neon } = require('@neondatabase/serverless');
 
 const app = express();
 
-// 1. 🌍 CONFIGURACIÓN DE PERMISOS CORS DETALLADOS
+// Permisos globales de comunicación
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 2. ⚡ CONTESTADOR AUTOMÁTICO EXPLICITO (Esto rompe el bloqueo de la imagen de golpe)
+app.use(express.json());
+
+// Responder de forma inmediata a los chequeos previos (preflight) del navegador
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  // Si Chrome pregunta usando OPTIONS, le contestamos 200 OK inmediatamente
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   next();
 });
 
-// 3. 📝 TRADUCTOR DE FORMULARIOS JSON (Vital)
-app.use(express.json());
-
-// ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON (Déjala tal cual está aquí abajo...)
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
+// ☁️ CONEXIÓN DE BAJA LATENCIA A NEON CLOUD:
+// Inicializamos el cliente nativo usando tu variable de entorno de Railway
+const sql = neon(process.env.DATABASE_URL);
 
 // 🎟️ RUTAS DE PULSERAS
 app.get('/pulseras', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY fecha_registro DESC');
-    res.json(resultado.rows);
+    // Consultas súper rápidas usando la sintaxis nativa de Neon
+    const filas = await sql('SELECT * FROM pulseras ORDER BY fecha_registro DESC;');
+    res.json(filas);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al obtener pulseras' });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -51,65 +45,59 @@ app.post('/pulseras', async (req, res) => {
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
     
-    // Validamos que no viajen datos vacíos que rompan PostgreSQL
-    if (!codigo_nfc || !tipo_acceso_id) {
-      return res.status(400).json({ guardado: false, error: 'Faltan datos obligatorios (NFC o Acceso)' });
-    }
-
-    // Intentamos meter el registro directo en internet
-    const resultado = await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) RETURNING *',
+    // Inyección segura utilizando marcadores de posición estándar ($1, $2, etc.)
+    await sql(
+      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
       [codigo_nfc, parseInt(tipo_acceso_id), parseFloat(saldo)]
     );
-    
-    // SI LLEGÓ AQUÍ, SE GUARDÓ DE VERDAD EN NEON CLOUD:
-    return res.json({ guardado: true, pulsera: resultado.rows[0] });
-
+    res.json({ guardado: true });
   } catch (err) {
-    // 🚨 CAPTURA EL ERROR REAL: Si Neon Cloud rechaza la conexión, aquí nos dirá por qué
-    console.error("❌ ERROR DETECTADO EN NEON CLOUD:", err.message);
-    return res.status(500).json({ guardado: false, error: `Error en Postgres (Neon): ${err.message}` });
+    console.error(err);
+    res.status(500).json({ guardado: false, error: err.message });
   }
 });
 
 app.put('/pulseras/recargar', async (req, res) => {
   try {
     const { codigo_nfc, monto } = req.body;
-    await pool.query('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2', [monto, codigo_nfc]);
-    res.json({ exito: true, mensaje: 'Recarga exitosa' });
+    await sql('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;', [parseFloat(monto), codigo_nfc]);
+    res.json({ exito: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al recargar' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// 🍔 RUTAS DE CATALOGO Y MENÚ
+// 🍔 RUTAS DE CATÁLOGO Y MENÚ
 app.get('/productos', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM productos ORDER BY id ASC');
-    res.json(resultado.rows);
+    const filas = await sql('SELECT * FROM productos ORDER BY id ASC;');
+    res.json(filas);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al obtener productos' });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/productos', async (req, res) => {
   try {
     const { nombre, precio, stock } = req.body;
-    await pool.query('INSERT INTO productos (nombre, precio, stock) VALUES ($1, $2, $3)', [nombre, precio, stock]);
+    await sql(
+      'INSERT INTO productos (nombre, precio, stock) VALUES ($1, $2, $3);',
+      [nombre, parseFloat(precio), parseInt(stock)]
+    );
     res.json({ guardado: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al registrar producto' });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.delete('/productos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM productos WHERE id = $1', [id]);
-    res.json({ exito: true, mensaje: 'Producto eliminado' });
+    await sql('DELETE FROM productos WHERE id = $1;', [parseInt(id)]);
+    res.json({ exito: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'No se puede eliminar un producto con historial de ventas' });
@@ -121,21 +109,21 @@ app.post('/ventas', async (req, res) => {
   try {
     const { codigo_nfc, producto_id } = req.body;
     
-    const pulseraRes = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
-    if (pulseraRes.rows.length === 0) return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
+    const pulseras = await sql('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
+    if (pulseras.length === 0) return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
     
-    const prodRes = await pool.query('SELECT * FROM productos WHERE id = $1', [producto_id]);
-    if (prodRes.rows.length === 0) return res.status(404).json({ error: 'Producto no existe' });
+    const productos = await sql('SELECT * FROM productos WHERE id = $1;', [parseInt(producto_id)]);
+    if (productos.length === 0) return res.status(404).json({ error: 'Producto no existe' });
 
-    const pulsera = pulseraRes.rows;
-    const producto = prodRes.rows;
+    const pulsera = pulseras[0];
+    const producto = productos[0];
 
     if (producto.stock <= 0) return res.status(400).json({ error: 'Artículo agotado en barra' });
     if (parseFloat(pulsera.saldo) < parseFloat(producto.precio)) return res.status(400).json({ error: 'Saldo insuficiente en pulsera' });
 
-    await pool.query('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2', [producto.precio, codigo_nfc]);
-    await pool.query('UPDATE productos SET stock = stock - 1 WHERE id = $1', [producto_id]);
-    await pool.query('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', [codigo_nfc, producto.precio]);
+    await sql('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2;', [producto.precio, codigo_nfc]);
+    await sql('UPDATE productos SET stock = stock - 1 WHERE id = $1;', [parseInt(producto_id)]);
+    await sql('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2);', [codigo_nfc, producto.precio]);
 
     res.json({ mensaje: `¡Compra exitosa! Se descontó $${producto.precio} de tu saldo.` });
   } catch (err) {
@@ -152,28 +140,28 @@ app.get('/reporte-ventas', async (req, res) => {
       JOIN productos p ON v.total = p.precio
       GROUP BY p.precio;
     `;
-    const resultado = await pool.query(consulta);
-    res.json(resultado.rows);
+    const filas = await sql(consulta);
+    res.json(filas);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al generar reporte' });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/sistema/reiniciar-evento', async (req, res) => {
   try {
-    await pool.query('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
-    await pool.query('TRUNCATE TABLE pulseras CASCADE;');
-    await pool.query('TRUNCATE TABLE productos RESTART IDENTITY CASCADE;');
+    await sql('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
+    await sql('TRUNCATE TABLE pulseras CASCADE;');
+    await sql('TRUNCATE TABLE productos RESTART IDENTITY CASCADE;');
     res.json({ exito: true, mensaje: '¡El sistema completo ha sido reiniciado en internet!' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ exito: false, error: 'No se pudo limpiar el sistema' });
+    res.status(500).json({ exito: false, error: err.message });
   }
 });
 
-// ⚡ PUERTO ASIGNADO DINÁMICAMENTE POR RAILWAY
-const PORT = process.env.PORT || 3000;
+// El puerto dinámico comercial de Railway
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Servidor comercial corriendo con éxito en el puerto ${PORT}`);
+  console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
 });
