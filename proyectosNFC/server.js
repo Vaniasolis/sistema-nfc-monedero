@@ -82,7 +82,8 @@ app.get('/productos', async (req, res) => {
 app.post('/productos', async (req, res) => {
   try {
     const { nombre, precio, stock } = req.body;
-    await sql(
+    // 🌟 CORREGIDO: Agregamos .query
+    await sql.query(
       'INSERT INTO productos (nombre, precio, stock) VALUES ($1, $2, $3);',
       [nombre, parseFloat(precio), parseInt(stock)]
     );
@@ -96,7 +97,8 @@ app.post('/productos', async (req, res) => {
 app.delete('/productos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await sql('DELETE FROM productos WHERE id = $1;', [parseInt(id)]);
+    // 🌟 CORREGIDO: Agregamos .query
+    await sql.query('DELETE FROM productos WHERE id = $1;', [parseInt(id)]);
     res.json({ exito: true });
   } catch (err) {
     console.error(err);
@@ -109,10 +111,11 @@ app.post('/ventas', async (req, res) => {
   try {
     const { codigo_nfc, producto_id } = req.body;
     
-    const pulseras = await sql('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
+    // 🌟 CORREGIDO: Agregamos .query a todas las consultas de la venta
+    const pulseras = await sql.query('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
     if (pulseras.length === 0) return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
     
-    const productos = await sql('SELECT * FROM productos WHERE id = $1;', [parseInt(producto_id)]);
+    const productos = await sql.query('SELECT * FROM productos WHERE id = $1;', [parseInt(producto_id)]);
     if (productos.length === 0) return res.status(404).json({ error: 'Producto no existe' });
 
     const pulsera = pulseras[0];
@@ -121,9 +124,9 @@ app.post('/ventas', async (req, res) => {
     if (producto.stock <= 0) return res.status(400).json({ error: 'Artículo agotado en barra' });
     if (parseFloat(pulsera.saldo) < parseFloat(producto.precio)) return res.status(400).json({ error: 'Saldo insuficiente en pulsera' });
 
-    await sql('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2;', [producto.precio, codigo_nfc]);
-    await sql('UPDATE productos SET stock = stock - 1 WHERE id = $1;', [parseInt(producto_id)]);
-    await sql('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2);', [codigo_nfc, producto.precio]);
+    await sql.query('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2;', [producto.precio, codigo_nfc]);
+    await sql.query('UPDATE productos SET stock = stock - 1 WHERE id = $1;', [parseInt(producto_id)]);
+    await sql.query('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2);', [codigo_nfc, producto.precio]);
 
     res.json({ mensaje: `¡Compra exitosa! Se descontó $${producto.precio} de tu saldo.` });
   } catch (err) {
