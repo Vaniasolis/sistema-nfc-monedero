@@ -1,21 +1,19 @@
 const express = require('express');
 const cors = require('cors');
 
-// 🌟 CAMBIADO: Usamos el Pool oficial del driver de Neon
+// 🌟 LA CLAVE CLOUD: Usamos el Pool serverless oficial que resuelve el Endpoint ID en internet
 const { Pool } = require('@neondatabase/serverless'); 
 
 const app = express();
 
-// ☁️ CONECTADO A INTERNET DE FORMA OFICIAL:
-// Abre tu Bloc de notas y pega aquí tu ENLACE LARGO ORIGINAL completo.
-// (El que copiaste al inicio con el botón "Copiar fragmento", sin inventar trucos con el signo $).
+// 🌍 CONECTADO A INTERNET DE FORMA OFICIAL:
+// Coloca tu string largo original de Neon que copiaste al inicio de la sesión
 const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_yZ1M9SFKrCdN@ep-wild-credit-ad09j161-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?sslmode=require',
 });
 
 app.use(cors());
 app.use(express.json());
-
 // ... (Aquí ya continúan tus rutas de app.get, app.post, etc. hacia abajo)
 
 // 1. OBTENER TODAS LAS PULSERAS

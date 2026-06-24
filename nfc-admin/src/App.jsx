@@ -3,8 +3,8 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 DEFINITIVO INTERNET: Apuntamos de forma correcta a tu servidor de Railway
-  const API_URL = 'https://railway.app';
+  // 🌍 ENLACE REAL DE INTERNET (Corregido y enrutado a tu propio servidor en la nube):
+  const API_URL = 'https://api-cashless-vj.up.railway.app'; 
 
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
 
