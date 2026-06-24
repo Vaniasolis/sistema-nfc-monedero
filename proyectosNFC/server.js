@@ -1,9 +1,15 @@
 const express = require('express');
 const cors = require('cors');
-// 🌟 SOLUCIÓN DEFINITIVA: Usamos el Cliente nativo tradicional para evitar el error de fetch
-const { Client } = require('@neondatabase/serverless');
+// 🌟 IMPORTACIÓN COMPLETA: Traemos la configuración y el cliente tradicional
+const { Client, neonConfig } = require('@neondatabase/serverless');
+const ws = require('ws'); // 🔌 Traemos el motor de WebSockets clásico
+
+// 🚀 ENLACE DE CONEXIÓN OBLIGATORIO PARA RAILWAY:
+// Esto le enseña a Neon cómo simular un navegador en servidores de internet
+neonConfig.webSocketConstructor = ws;
 
 const app = express();
+
 
 // Permisos globales de comunicación abiertos
 app.use(cors({
