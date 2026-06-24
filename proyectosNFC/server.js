@@ -4,21 +4,11 @@ const { Pool } = require('@neondatabase/serverless');
 
 const app = express();
 
-// 1. 🌍 CONFIGURACIÓN DE PERMISOS CORS ULTRALIBRE (Debe ir obligatoriamente arriba de todo)
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// 1. 🌍 CONFIGURACIÓN UNIVERSAL DE CORS: Esto le abre las compuertas de forma automática a los preflights de Chrome y APKs
+app.use(cors());
 
 // 2. ⚡ TRADUCTOR DE JSON (Vital para leer tus formularios)
 app.use(express.json());
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  res.sendStatus(200);
-});
 
 // 3. ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON
 const pool = new Pool({
@@ -105,8 +95,8 @@ app.post('/ventas', async (req, res) => {
     const prodRes = await pool.query('SELECT * FROM productos WHERE id = $1', [producto_id]);
     if (prodRes.rows.length === 0) return res.status(404).json({ error: 'Producto no existe' });
 
-    const pulsera = pulseraRes.rows[0];
-    const producto = prodRes.rows[0];
+    const pulsera = pulseraRes.rows;
+    const producto = prodRes.rows;
 
     if (producto.stock <= 0) return res.status(400).json({ error: 'Artículo agotado en barra' });
     if (parseFloat(pulsera.saldo) < parseFloat(producto.precio)) return res.status(400).json({ error: 'Saldo insuficiente en pulsera' });
