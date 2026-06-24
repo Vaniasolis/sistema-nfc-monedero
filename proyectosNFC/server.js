@@ -48,29 +48,27 @@ app.get('/pulseras', async (req, res) => {
 });
 
 app.post('/pulseras', async (req, res) => {
-  // Aseguramos cabeceras manuales de emergencia por si la nube las congela
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
     
-    // Forzamos valores por defecto seguros por si el formulario manda algo vacío
-    const nfc_limpio = codigo_nfc || 'NFC_DEFAULT';
-    const acceso_limpio = parseInt(tipo_acceso_id) || 1;
-    const saldo_limpio = parseFloat(saldo) || 0.00;
+    // Validamos que no viajen datos vacíos que rompan PostgreSQL
+    if (!codigo_nfc || !tipo_acceso_id) {
+      return res.status(400).json({ guardado: false, error: 'Faltan datos obligatorios (NFC o Acceso)' });
+    }
 
+    // Intentamos meter el registro directo en internet
     const resultado = await pool.query(
       'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) RETURNING *',
-      [nfc_limpio, acceso_limpio, saldo_limpio]
+      [codigo_nfc, parseInt(tipo_acceso_id), parseFloat(saldo)]
     );
     
-    // Regresamos siempre estatus 200 limpio para Axios
-    return res.status(200).json({ guardado: true, pulsera: resultado.rows[0] });
+    // SI LLEGÓ AQUÍ, SE GUARDÓ DE VERDAD EN NEON CLOUD:
+    return res.json({ guardado: true, pulsera: resultado.rows[0] });
 
   } catch (err) {
-    console.error("❌ FALLA REAL EN POSTGRESQL:", err.message);
-    return res.status(200).json({ guardado: false, error: err.message });
+    // 🚨 CAPTURA EL ERROR REAL: Si Neon Cloud rechaza la conexión, aquí nos dirá por qué
+    console.error("❌ ERROR DETECTADO EN NEON CLOUD:", err.message);
+    return res.status(500).json({ guardado: false, error: `Error en Postgres (Neon): ${err.message}` });
   }
 });
 
