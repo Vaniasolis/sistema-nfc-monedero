@@ -3,12 +3,11 @@ const cors = require('cors');
 const { Client, neonConfig } = require('@neondatabase/serverless');
 const ws = require('ws');
 
+// Configuración obligatoria de WebSockets para Railway
 neonConfig.webSocketConstructor = ws;
 
-// 🌟 EL INTERRUPTOR MÁGICO: Apaga la validación estricta de nombres alternativos del certificado SSL
-neonConfig.forceDisablePgSSL = true; 
-
 const app = express();
+
 // Permisos globales de comunicación abiertos
 app.use(cors({
   origin: '*',
@@ -18,7 +17,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Atendedor de preguntas previas preflight del navegador
+// Atendedor de preguntas previas preflight de Chrome
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -29,15 +28,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// 🎟️ RUTAS DE PULSERAS
+// 🎟️ RUTAS DE PULSERAS (Mapeado exacto para tus datos de la foto)
 app.get('/pulseras', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
     await client.connect();
-    const resultado = await client.query('SELECT * FROM pulseras ORDER BY fecha_registro DESC;');
+    const resultado = await client.query('SELECT codigo_nfc, tipo_acceso_id, saldo, fecha_registro FROM pulseras ORDER BY fecha_registro DESC;');
+    // Retornamos directamente las filas en un arreglo limpio para tu React
     res.json(resultado.rows);
   } catch (err) {
-    console.error(err);
+    console.error("❌ ERROR EN GET PULSERAS:", err.message);
     res.status(500).json({ error: err.message });
   } finally {
     await client.end();
@@ -55,7 +55,7 @@ app.post('/pulseras', async (req, res) => {
     );
     res.json({ guardado: true });
   } catch (err) {
-    console.error(err);
+    console.error("❌ ERROR EN POST PULSERAS:", err.message);
     res.status(500).json({ guardado: false, error: err.message });
   } finally {
     await client.end();
