@@ -350,8 +350,10 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
-// ⚡ Escuchando de forma global en tu red
-app.listen(3000, '0.0.0.0', () => {
-  console.log('✅ Servidor de Node.js corriendo con éxito en el puerto 3000');
+// 🌍 CONFIGURACIÓN CLOUD: Railway inyectará el puerto dinámico de internet aquí automáticamente
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Servidor de Node.js corriendo con éxito en el puerto ${PORT}`);
   console.log('☁️ Conectado exitosamente a PostgreSQL (Neon Cloud)');
 });

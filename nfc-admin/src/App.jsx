@@ -3,8 +3,8 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 CONECTADO A TU RED WI-FI REAL
-  const API_URL = 'http://192.168.100.189:3000';
+  // 🌍 DEFINITIVO INTERNET: Apuntamos de forma correcta a tu servidor de Railway
+  const API_URL = 'https://railway.app';
 
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
 
@@ -59,26 +59,28 @@ function App() {
     }
   };
 
-  const guardarPulsera = async () => {
+    const guardarPulsera = async () => {
     try {
-      const querySql = `INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ('${codigoNfc}', ${parseInt(tipoAccesoId)}, ${parseFloat(saldo)});`;
-
-      const respuesta = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${NEON_PASSWORD}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: querySql })
+      // 🚀 Mandamos los datos a tu servidor de Railway mediante Axios
+      const res = await axios.post(`${API_URL}/pulseras`, {
+        codigo_nfc: codigoNfc,
+        tipo_acceso_id: parseInt(tipoAccesoId),
+        saldo: parseFloat(saldo)
       });
 
-      if (respuesta.status === 200) {
-        setCodigoNfc(''); setTipoAccesoId(''); setSaldo(''); setMostrarModal(false);
-        cargarPulseras(); // Recargamos la lista desde internet
-        alert('¡Pulsera dada de alta directamente en Neon Cloud!');
+      if (res.status === 200 || res.status === 201 || res.data.guardado) {
+        setCodigoNfc('');
+        setTipoAccesoId('');
+        setSaldo('');
+        setMostrarModal(false);
+        
+        // Recargamos la tabla desde internet
+        cargarPulseras();
+        alert('¡Pulsera guardada con éxito en la nube!');
       }
-    } catch (e) { 
-      alert('Error al conectar directo con Neon Cloud'); 
+    } catch (e) {
+      console.error(e);
+      alert('Error de red al conectar con el servidor de Railway');
     }
   };
 
