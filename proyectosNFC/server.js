@@ -1,16 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-// 🌟 IMPORTACIÓN COMPLETA: Traemos la configuración y el cliente tradicional
 const { Client, neonConfig } = require('@neondatabase/serverless');
-const ws = require('ws'); // 🔌 Traemos el motor de WebSockets clásico
+const ws = require('ws');
 
-// 🚀 ENLACE DE CONEXIÓN OBLIGATORIO PARA RAILWAY:
-// Esto le enseña a Neon cómo simular un navegador en servidores de internet
 neonConfig.webSocketConstructor = ws;
 
+// 🌟 EL INTERRUPTOR MÁGICO: Apaga la validación estricta de nombres alternativos del certificado SSL
+neonConfig.forceDisablePgSSL = true; 
+
 const app = express();
-
-
 // Permisos globales de comunicación abiertos
 app.use(cors({
   origin: '*',
