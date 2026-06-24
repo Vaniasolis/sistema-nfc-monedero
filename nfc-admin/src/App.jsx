@@ -32,11 +32,21 @@ function App() {
   }, []);
 
   const cargarPulseras = async () => {
-    try { 
-      const res = await axios.get(`${API_URL}/pulseras`); 
-      setPulseras(res.data); 
+    try {
+      const respuesta = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NEON_PASSWORD}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: 'SELECT * FROM pulseras ORDER BY fecha_registro DESC;' })
+      });
+      const datos = await respuesta.json();
+      if (datos && datos.rows) {
+        setPulseras(datos.rows);
+      }
     } catch (e) { 
-      console.error(e); 
+      console.error("Error de lectura en Neon:", e); 
     }
   };
 
@@ -51,21 +61,24 @@ function App() {
 
   const guardarPulsera = async () => {
     try {
-      const res = await axios.post(`${API_URL}/pulseras`, { 
-        codigo_nfc: codigoNfc, 
-        tipo_acceso_id: parseInt(tipoAccesoId), 
-        saldo: parseFloat(saldo) 
+      const querySql = `INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ('${codigoNfc}', ${parseInt(tipoAccesoId)}, ${parseFloat(saldo)});`;
+
+      const respuesta = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NEON_PASSWORD}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: querySql })
       });
-      if (res.status === 200 || res.status === 201 || res.data.guardado) {
-        setCodigoNfc(''); 
-        setTipoAccesoId(''); 
-        setSaldo(''); 
-        setMostrarModal(false); 
-        cargarPulseras();
-        alert('Pulsera dada de alta correctamente.');
+
+      if (respuesta.status === 200) {
+        setCodigoNfc(''); setTipoAccesoId(''); setSaldo(''); setMostrarModal(false);
+        cargarPulseras(); // Recargamos la lista desde internet
+        alert('¡Pulsera dada de alta directamente en Neon Cloud!');
       }
     } catch (e) { 
-      alert('Error al conectar con la API'); 
+      alert('Error al conectar directo con Neon Cloud'); 
     }
   };
 

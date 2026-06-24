@@ -16,7 +16,6 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-
 // ... (Aquí ya continúan tus rutas de app.get, app.post, etc. hacia abajo)
 
 // 1. OBTENER TODAS LAS PULSERAS
@@ -45,12 +44,19 @@ app.post('/pulseras', async (req, res) => {
 
     res.json({ guardado: true, pulsera: resultado.rows[0] });
 
-  } catch (error) {
-    // ⚡ IMPRESCINDIBLE: Esto te imprimirá la falla exacta de PostgreSQL en tu consola negra de VS Code
-    console.error("❌ FALLA REAL EN POSTGRESQL:", error.message);
-    
-    res.status(500).json({ guardado: false, error: error.message });
+  } catch (e) {
+
+  console.error("ERROR COMPLETO:", e);
+
+  if (e.response) {
+    alert(
+      `Status: ${e.response.status}\n` +
+      JSON.stringify(e.response.data)
+    );
+  } else {
+    alert(e.message);
   }
+}
 });
 
 // 3. VALIDAR Y DESCONTAR SALDO
