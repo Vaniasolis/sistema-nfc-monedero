@@ -13,7 +13,12 @@ app.use(cors({
 
 // 2. ⚡ TRADUCTOR DE JSON (Vital para leer tus formularios)
 app.use(express.json());
-app.options('*', cors());
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.sendStatus(200);
+});
 
 // 3. ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON
 const pool = new Pool({
