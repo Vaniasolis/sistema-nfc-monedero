@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 
 function App() {
   // 🌍 ENLACE REAL Y ACTIVO DE TU PANEL DE RAILWAY:
-  const API_URL = 'https://sistema-nfc-monedero-production.up.railway.app';
+  const API_URL = 'https://sistema_nfc_monedero-production.up.railway.app';
 
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
   // Estados de Pulseras

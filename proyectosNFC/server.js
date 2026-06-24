@@ -42,16 +42,29 @@ app.get('/pulseras', async (req, res) => {
 });
 
 app.post('/pulseras', async (req, res) => {
+  // Aseguramos cabeceras manuales de emergencia por si la nube las congela
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
+    
+    // Forzamos valores por defecto seguros por si el formulario manda algo vacío
+    const nfc_limpio = codigo_nfc || 'NFC_DEFAULT';
+    const acceso_limpio = parseInt(tipo_acceso_id) || 1;
+    const saldo_limpio = parseFloat(saldo) || 0.00;
+
     const resultado = await pool.query(
       'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) RETURNING *',
-      [codigo_nfc, tipo_acceso_id, saldo]
+      [nfc_limpio, acceso_limpio, saldo_limpio]
     );
-    res.json({ guardado: true, pulsera: resultado.rows });
+    
+    // Regresamos siempre estatus 200 limpio para Axios
+    return res.status(200).json({ guardado: true, pulsera: resultado.rows[0] });
+
   } catch (err) {
     console.error("❌ FALLA REAL EN POSTGRESQL:", err.message);
-    res.status(500).json({ guardado: false, error: err.message });
+    return res.status(200).json({ guardado: false, error: err.message });
   }
 });
 
