@@ -4,31 +4,34 @@ const { Pool } = require('@neondatabase/serverless');
 
 const app = express();
 
-// ⚡ REEMPLAZADO: Aquí entra la nueva configuración robusta de CORS
+// 1. 🌍 CONFIGURACIÓN DE PERMISOS CORS DETALLADOS
 app.use(cors({
-  origin: true, 
-  credentials: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// 2. ⚡ CONTESTADOR AUTOMÁTICO EXPLICITO (Esto rompe el bloqueo de la imagen de golpe)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Si Chrome pregunta usando OPTIONS, le contestamos 200 OK inmediatamente
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   next();
 });
 
-// ⚡ ¡CONSERVADO! El traductor se queda justo aquí abajo
+// 3. 📝 TRADUCTOR DE FORMULARIOS JSON (Vital)
 app.use(express.json());
 
-// ☁️ ¡CONSERVADO! Tu conexión impecable a Neon se queda intacta aquí abajo
+// ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON (Déjala tal cual está aquí abajo...)
 const pool = new Pool({
   connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?options=endpoint%3Dep-wild-credit-ad09j161&sslmode=require',
 });
+
 
 // 🎟️ RUTAS DE PULSERAS
 app.get('/pulseras', async (req, res) => {
