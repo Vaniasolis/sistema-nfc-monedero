@@ -4,13 +4,28 @@ const { Pool } = require('@neondatabase/serverless');
 
 const app = express();
 
-// 1. 🌍 CONFIGURACIÓN UNIVERSAL DE CORS: Esto le abre las compuertas de forma automática a los preflights de Chrome y APKs
-app.use(cors());
+// ⚡ REEMPLAZADO: Aquí entra la nueva configuración robusta de CORS
+app.use(cors({
+  origin: true, 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
 
-// 2. ⚡ TRADUCTOR DE JSON (Vital para leer tus formularios)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// ⚡ ¡CONSERVADO! El traductor se queda justo aquí abajo
 app.use(express.json());
 
-// 3. ☁️ TU CONEXIÓN COMERCIAL A LA NUBE DE NEON
+// ☁️ ¡CONSERVADO! Tu conexión impecable a Neon se queda intacta aquí abajo
 const pool = new Pool({
   connectionString: 'postgresql://neondb_owner:npg_m8TaIP3CjYKO@ep-wild-credit-ad09j161-pooler.c.us-east-1.aws.neon.tech/neondb?options=endpoint%3Dep-wild-credit-ad09j161&sslmode=require',
 });
