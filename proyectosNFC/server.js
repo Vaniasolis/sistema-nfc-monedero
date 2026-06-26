@@ -125,6 +125,55 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
+// 🛒 RUTAS DE PUNTO DE VENTA (POS) - CORREGIDA SIN RESPUESTAS DUPLICADAS
+app.post('/ventas', async (req, res) => {
+  const client = new Client(process.env.DATABASE_URL);
+  try {
+    const { codigo_nfc, producto_id } = req.body;
+    await client.connect();
+    
+    // 1. Buscamos la pulsera
+    const pulserasRes = await client.query('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
+    if (pulserasRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
+    }
+    
+    // 2. Buscamos el producto
+    const productosRes = await client.query('SELECT * FROM productos WHERE id = $1;', [parseInt(producto_id)]);
+    if (productosRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Producto no existe' });
+    }
+
+    const pulsera = pulserasRes.rows[0]; // 🌟 Ajustado para leer el primer registro
+    const producto = productosRes.rows[0];
+
+    // 3. Validamos stock y saldo
+    if (producto.stock <= 0) {
+      return res.status(400).json({ error: 'Artículo agotado en barra' });
+    }
+    if (parseFloat(pulsera.saldo) < parseFloat(producto.precio)) {
+      return res.status(400).json({ error: 'Saldo insuficiente en pulsera' });
+    }
+
+    // 4. Procesamos la transacción en la nube de Neon
+    await client.query('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2;', [producto.precio, codigo_nfc]);
+    await client.query('UPDATE productos SET stock = stock - 1 WHERE id = $1;', [parseInt(producto_id)]);
+    await client.query('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2);', [codigo_nfc, producto.precio]);
+
+    // 🌟 REGLA DE ORO: El 'return' frena el código de inmediato para que no mande más respuestas
+    return res.json({ mensaje: `¡Compra exitosa! Se descontó $${producto.precio} de tu saldo.` });
+
+  } catch (err) {
+    console.error("❌ ERROR EN PROCESAR VENTA:", err.message);
+    // Aseguramos que si cae aquí, no haya mandado la respuesta de éxito antes
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Error al procesar la venta cashless' });
+    }
+  } finally {
+    await client.end();
+  }
+});
+
 // ↩️ RUTA DE REVERSIÓN: Cancela la última venta de una pulsera, regresa saldo y devuelve stock
 app.post('/ventas/revertir', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
@@ -146,7 +195,7 @@ app.post('/ventas/revertir', async (req, res) => {
       return res.status(404).json({ error: 'No se encontraron ventas recientes para esta pulsera.' });
     }
 
-    // 🌟 Sintonizado con tu estilo: Leemos la fila [0]
+    // 🌟 CORRECCIÓN EXPLICITA: Leemos el índice [0] del primer registro del arreglo
     const ultimaVenta = ultimaVentaRes.rows[0];
     const montoARegresar = parseFloat(ultimaVenta.total);
 
@@ -156,23 +205,25 @@ app.post('/ventas/revertir', async (req, res) => {
       [montoARegresar]
     );
 
-    // 3. HACE LA MAGIA EN NEON CLOUD (Regresa dinero a la pulsera)
+    // 3. HACE LA MAGIA EN NEON CLOUD (Regresa el dinero robado a la pulsera)
     await client.query('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;', [montoARegresar, codigo_nfc]);
     
-    // Si encontramos el producto, le regresamos su pieza al Stock
+    // Si encontramos el producto, le regresamos su pieza de inmediato al Stock
     if (productoRes.rows.length > 0) {
-      const producto = productoRes.rows[0];
+      const producto = productoRes.rows[0]; // 🌟 Índice [0] integrado
       await client.query('UPDATE productos SET stock = stock + 1 WHERE id = $1;', [producto.id]);
     }
 
-    // 4. Borramos ese registro de venta para limpiar el historial de caja
+    // 4. Borramos ese registro de venta para limpiar el historial y cuadrar la caja
     await client.query('DELETE FROM ventas WHERE id = $1;', [ultimaVenta.id]);
 
     return res.json({ mensaje: `↩️ Reversión exitosa. Se regresaron $${montoARegresar} a la pulsera.` });
 
   } catch (err) {
     console.error("❌ ERROR EN REVERSIÓN:", err.message);
-    return res.status(500).json({ error: 'No se pudo procesar la cancelación de la venta.' });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'No se pudo procesar la cancelación de la venta.' });
+    }
   } finally {
     await client.end();
   }

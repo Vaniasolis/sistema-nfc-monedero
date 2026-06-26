@@ -124,6 +124,7 @@ function App() {
     const procesarVenta = async (e) => {
     e.preventDefault();
     try {
+      
       // 🚀 Mandamos los datos limpios al backend usando Axios
       const res = await axios.post(`${API_URL}/ventas`, { 
         codigo_nfc: pulseraVenta, 
@@ -286,7 +287,36 @@ function App() {
                   {productos.map((prod) => <option key={prod.id} value={prod.id}>{prod.nombre} (${prod.precio})</option>)}
                 </select>
               </div>
-              <button type="submit" style={{ padding: '14px', borderRadius: '6px', border: 'none', backgroundColor: '#28a745', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', marginTop: '5px' }}>Confirmar Compra Cashless</button>
+              {/* Botón Verde Original de Cobros */}
+              <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '2px', border: 'none', backgroundColor: '#28a745', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>
+                Confirmar Compra Cashless
+              </button>
+              {/* ↩️ BOTÓN DE EMERGENCIA DE REVERSIÓN AUTÓNOMO */}
+              <button 
+                type="button" 
+                onClick={async () => {
+                  const codigoPulsera = prompt('Por favor, ingresa o escanea el código de la pulsera para cancelar su última venta:');
+                  if (!codigoPulsera) return;
+
+                  if (!window.confirm(`¿Estás seguro de que deseas cancelar la última venta de la pulsera ${codigoPulsera}?`)) {
+                    return;
+                  }
+
+                  try {
+                    const res = await axios.post(`${API_URL}/ventas/revertir`, { codigo_nfc: codigoPulsera });
+                    alert(res.data.mensaje || '¡Venta cancelada con éxito!');
+                    if (typeof cargarPulseras === 'function') cargarPulseras();
+                    if (typeof cargarProductos === 'function') cargarProductos();
+                  } catch (e) {
+                    console.error("Error en la reversión:", e);
+                    alert(e.response?.data?.error || 'Error al intentar revertir la venta.');
+                  }
+                }} 
+                style={{ width: '100%', marginTop: '12px', padding: '12px', borderRadius: '6px', border: '1px solid #dc3545', backgroundColor: 'transparent', color: '#dc3545', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxSizing: 'border-box' }}
+              >
+                ↩️ Cancelar Última Venta / Reversión
+              </button>
+              
             </form>
           </div>
 
