@@ -288,9 +288,8 @@ function App() {
               <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
             </div>
           </div>
-                    {/* 📱 CONTENEDOR AJUSTADO AL 100% (Sin necesidad de deslizar) */}
+                    {/* 📱 CONTENEDOR AJUSTADO AL 100% */}
           <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box' }}>
-            
             <table border="1" cellPadding="4" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f1f3f5', color: '#495057', fontSize: '12px' }}>
@@ -298,33 +297,69 @@ function App() {
                   <th style={{ padding: '8px 4px' }}>Acceso</th>
                   <th style={{ padding: '8px 4px' }}>Saldo</th>
                   <th style={{ padding: '8px 4px' }}>Caja</th>
+                  <th style={{ padding: '8px 4px' }}>Acción</th> {/* 🌟 NUEVA COLUMNA DE CONTROL */}
                 </tr>
               </thead>
               <tbody>
                 {pulseras.map((p) => (
                   <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
-                    {/* Código NFC con salto de línea automático si es muy largo */}
                     <td style={{ fontWeight: '500', padding: '10px 4px', wordBreak: 'break-all', fontSize: '12px' }}>{p.codigo_nfc}</td>
                     <td style={{ padding: '10px 4px', fontSize: '12px' }}>{obtenerTextoAcceso(p.tipo_acceso_id)}</td>
                     <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px' }}>${p.saldo}</td>
+                    
+                    {/* Botón Verde Original de Recargar */}
                     <td style={{ padding: '10px 4px' }}>
                       <button type="button" onClick={async () => {
                         const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
                         if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
-                        try {await axios.put(`${apiUrlDinamica}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
+                        try {
+                          await axios.put(`${apiUrlDinamica}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
                           alert('¡Recarga exitosa!'); cargarPulseras();
                         } catch (e) { alert('No se pudo procesar la recarga.'); }
                       }} style={{ padding: '6px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>💵 Recargar</button>
                     </td>
+
+                    {/* 🗑️ BOTE DE BASURA ROJO CON LA CONTRASEÑA DE SEGURIDAD ADMIN123 */}
+                    <td style={{ padding: '10px 4px' }}>
+                      <button 
+                        type="button" 
+                        onClick={async () => {
+                          // 🔐 1. Pedimos de forma obligatoria la clave del supervisor
+                          const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
+                          if (!claveSeguridad) return;
+
+                          // 🛡️ 2. Validamos que coincida con tu clave maestro
+                          if (claveSeguridad !== 'admin123') {
+                            alert('❌ Clave incorrecta. Acción denegada.');
+                            return;
+                          }
+
+                          // ⚠️ 3. Confirmación de doble chequeo
+                          if (!window.confirm(`¿Confirmas la eliminación permanente de la pulsera ${p.codigo_nfc}?`)) {
+                            return;
+                          }
+
+                          try {
+                            // 🌟 CORRECCIÓN CRUCIAL: Debe ser estrictamente 'axios.delete'
+                            const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
+                            alert(res.data.mensaje);
+                            cargarPulseras(); // Refresca tu lista en la pantalla al instante
+                          } catch (e) {
+                            alert(e.response?.data?.error || 'No se pudo eliminar la pulsera.');
+                          }
+                        }} 
+                        style={{ padding: '6px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </td>
+
                   </tr>
                 ))}
-                {pulseras.length === 0 && <tr><td colSpan="4" style={{ padding: '20px', color: '#6c757d' }}>No hay pulseras registradas.</td></tr>}
+                {pulseras.length === 0 && <tr><td colSpan="5" style={{ padding: '20px', color: '#6c757d' }}>No hay pulseras registradas.</td></tr>}
               </tbody>
             </table>
-
           </div>
-
-          <button onClick={() => setMostrarModal(true)} style={{ position: 'fixed', bottom: '75px', right: '25px', width: '65px', height: '65px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', fontSize: '35px', border: 'none', cursor: 'pointer', boxShadow: '0px 4px 12px rgba(0,0,0,0.3)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '300' }}>+</button>
         </div>
       )}
 
@@ -413,7 +448,8 @@ function App() {
                     const res = await axios.post(`${API_URL}/api/sistema/reiniciar-evento`);
                     alert(res.data.mensaje); cargarPulseras(); cargarProductos();
                   } catch (err) { alert("Error al intentar reiniciar el sistema."); }
-                }} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>🧹 Limpiar Evento</button>
+                }} 
+                style={{ flex: 1, padding: '12px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>🧹 Limpiar Evento</button>
                 <button type="button" onClick={() => setMostrarModalProducto(true)} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>➕ Añadir Bebida</button>
               </div>
             </div>

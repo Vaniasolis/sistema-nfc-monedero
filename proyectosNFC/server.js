@@ -274,24 +274,71 @@ app.get('/reporte-ventas', async (req, res) => {
   }
 });
 
-app.post('/api/sistema/reiniciar-evento', async (req, res) => {
+// 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
+app.delete('/pulseras/limpiar', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
     await client.connect();
-    await client.query('TRUNCATE TABLE ventas RESTART IDENTITY CASCADE;');
-    await client.query('TRUNCATE TABLE pulseras CASCADE;');
-    await client.query('TRUNCATE TABLE productos RESTART IDENTITY CASCADE;');
-    res.json({ exito: true, mensaje: '¡El sistema completo ha sido reiniciado en internet!' });
+    // Borramos primero las ventas para liberar candados relacionales
+    await client.query('DELETE FROM ventas;');
+    // Ahora vaciamos las pulseras de taquilla manteniendo tu catálogo de bebidas intacto
+    await client.query('DELETE FROM pulseras;');
+    return res.json({ mensaje: '🧹 Evento reiniciado con éxito. Registros y ventas vaciados en ceros.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ exito: false, error: err.message });
+    return res.status(500).json({ error: err.message });
   } finally {
     await client.end();
   }
 });
 
-// El puerto dinámico comercial de Railway
+// 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
+app.delete('/pulseras/limpiar', async (req, res) => {
+  const client = new Client(process.env.DATABASE_URL);
+  try {
+    await client.connect();
+    // Borramos primero las ventas para liberar candados relacionales
+    await client.query('DELETE FROM ventas;');
+    // Ahora vaciamos las pulseras de taquilla manteniendo tu catálogo de bebidas intacto
+    await client.query('DELETE FROM pulseras;');
+    return res.json({ mensaje: '🧹 Evento reiniciado con éxito. Registros y ventas vaciados en ceros.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  } finally {
+    await client.end();
+  }
+});
+
+// 🗑️ RUTA DE BORRADO INDIVIDUAL: Elimina una sola pulsera específica si no pagó (¡AQUÍ VA!)
+app.delete('/pulseras/eliminar/:codigo_nfc', async (req, res) => {
+  const client = new Client(process.env.DATABASE_URL);
+  try {
+    const { codigo_nfc } = req.params;
+    await client.connect();
+    // 1. Desamarramos cualquier historial de venta accidental
+    await client.query('DELETE FROM ventas WHERE pulsera_id = $1;', [codigo_nfc]);
+    // 2. Destruimos la pulsera de Neon Cloud
+    await client.query('DELETE FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
+    return res.json({ mensaje: `🗑️ Pulsera ${codigo_nfc} eliminada de la taquilla correctamente.` });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'No se pudo eliminar la pulsera.' });
+  } finally {
+    await client.end();
+  }
+});
+
+// El puerto dinámico comercial de Railway (SIEMPRE AL FINAL)
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
 });
+
+
+// El puerto dinámico comercial de Railway (SIEMPRE AL FINAL)
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
+});
+
