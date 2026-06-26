@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 
 function App() {
   // 🌍 ENLACE REAL Y ACTIVO DE TU PANEL DE RAILWAY:
-  const API_URL = 'https://sistema-nfc-monedero-production.up.railway.app';
+  const API_URL = 'https://sistema-nfc-monedero-copy-1-production.up.railway.app';
   
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
   // Estados de Pulseras
@@ -25,9 +25,32 @@ function App() {
   const [precioProducto, setPrecioProducto] = useState('');
   const [stockProducto, setStockProducto] = useState('');
 
-  useEffect(() => { 
-    cargarPulseras(); 
-    cargarProductos(); 
+   // 🛰️ MOTOR NFC UNIVERSAL: Captura el UID de cualquier chip del planeta (Tarjetas o Pulseras)
+  useEffect(() => {
+    cargarPulseras();
+    cargarProductos();
+
+    // Verificamos si el plugin nativo está montado en el celular
+    if (window.nfc) {
+      // 🌟 CAMBIO CLAVE: Usamos 'addTagDiscoveredListener' para leer identificadores base (UID)
+      window.nfc.addTagDiscoveredListener(
+        (nfcEvent) => {
+          const tag = nfcEvent.tag;
+          if (tag && tag.id) {
+            // Convertimos los bytes nativos del chip a una cadena de texto limpia
+            const codigoHex = window.nfc.bytesToHexString(tag.id).toUpperCase();
+            
+            if (codigoHex) {
+              setCodigoNfc(codigoHex);
+              setMostrarModal(true); // Forzamos al formulario a abrirse con el código inyectado
+              alert(`¡Chip NFC Detectado con éxito!\nCódigo: ${codigoHex}`);
+            }
+          }
+        },
+        () => console.log('✅ Antena universal NFC del Samsung S25 en línea...'),
+        (err) => console.error('❌ Error en hardware NFC:', err)
+      );
+    }
   }, []);
 
     // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
@@ -41,7 +64,7 @@ function App() {
     }
   };
 
-  // 🍔 FUNCIÓN CORRECTA PARA LEER LAS BEBIDAS DESDE RAILWAY
+  // 🍺 FUNCIÓN CORRECTA PARA LEER LAS BEBIDAS DESDE RAILWAY
   const cargarProductos = async () => {
     try { 
       // Le pedimos el menú a tu servidor en internet
@@ -98,37 +121,28 @@ function App() {
     }
   };
 
-  const procesarVenta = async (e) => {
+    const procesarVenta = async (e) => {
     e.preventDefault();
     try {
+      // 🚀 Mandamos los datos limpios al backend usando Axios
       const res = await axios.post(`${API_URL}/ventas`, { 
         codigo_nfc: pulseraVenta, 
         producto_id: parseInt(productoSeleccionado) 
       });
-      alert(res.data.mensaje); 
+
+      // 🌟 Alerta única de éxito real
+      alert(res.data.mensaje || '¡Compra procesada con éxito!'); 
+      
+      // Limpiamos los campos del formulario
       setPulseraVenta(''); 
       setProductoSeleccionado(''); 
+      
+      // 🔄 Recargamos los datos limpios desde internet de forma externa
       cargarPulseras(); 
-      const cargarPulseras = async () => {
-    try {
-      const respuesta = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${NEON_PASSWORD}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query: 'SELECT * FROM pulseras ORDER BY fecha_registro DESC;' })
-      });
-      const datos = await respuesta.json();
-      if (datos && datos.rows) {
-        setPulseras(datos.rows);
-      }
+      cargarProductos();
+
     } catch (e) { 
-      console.error("Error de lectura en Neon:", e); 
-    }
-  };
-rgarProductos();
-    } catch (e) { 
+      console.error("Falla controlada en ventas:", e);
       alert(e.response?.data?.error || 'Error en la venta'); 
     }
   };
@@ -173,8 +187,12 @@ rgarProductos();
   };
 
   return (
-    <div style={{ padding: '15px', minHeight: '100vh', fontFamily: 'sans-serif', backgroundColor: '#f8f9fa', boxSizing: 'border-box' }}>
-      <h2 style={{ textAlign: 'center', margin: '10px 0 20px 0', color: '#333' }}>🎟️ Panel Cashless NFC</h2>
+        // 🌟 REGLA DE ORO DE DISEÑO: Forzamos flex y minHeight para que el pie de página se vaya al fondo real del celular
+    <div style={{ padding: '15px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
+      
+      <h2 style={{ textAlign: 'center', margin: '30px 0 20px 0', color: '#1e293b', fontWeight: 'bold', fontSize: '22px' }}>
+        🎟️ Panel Cashless NFC
+      </h2>
       
       {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', backgroundColor: '#e9ecef', padding: '5px', borderRadius: '8px' }}>
@@ -189,8 +207,7 @@ rgarProductos();
         >
           🎟️ Pulseras
         </button>
-        <button 
-          onClick={() => setPestañaActiva('productos')} 
+        <button onClick={() => setPestañaActiva('productos')} 
           style={{
             flex: 1, padding: '14px', cursor: 'pointer', fontSize: '16px',
             backgroundColor: pestañaActiva === 'productos' ? '#007bff' : 'transparent', 
@@ -198,7 +215,7 @@ rgarProductos();
             border: 'none', borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s'
           }}
         >
-          🍔 Punto de Venta
+          🍺 Punto de Venta
         </button>
       </div>
 
@@ -210,32 +227,44 @@ rgarProductos();
               <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
             </div>
           </div>
-          <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f1f3f5', color: '#495057' }}><th>NFC</th><th>Acceso</th><th>Saldo</th><th>Caja</th></tr>
-            </thead>
-            <tbody>
-              {pulseras.map((p) => (
-                <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
-                  <td style={{ fontWeight: '500', padding: '12px 8px' }}>{p.codigo_nfc}</td>
-                  <td style={{ padding: '12px 8px' }}>{obtenerTextoAcceso(p.tipo_acceso_id)}</td>
-                  <td style={{ fontWeight: 'bold', color: '#28a745', padding: '12px 8px' }}>${p.saldo}</td>
-                  <td style={{ padding: '12px 8px' }}>
-                    <button type="button" onClick={async () => {
-                      const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
-                      if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
-                      try {
-                        await axios.put(`${API_URL}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
-                        alert('¡Recarga exitosa!'); cargarPulseras();
-                      } catch (e) { alert('No se pudo procesar la recarga.'); }
-                    }} style={{ padding: '8px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}>💰 Recargar</button>
-                  </td>
+                    {/* 📱 CONTENEDOR AJUSTADO AL 100% (Sin necesidad de deslizar) */}
+          <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box' }}>
+            
+            <table border="1" cellPadding="4" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f1f3f5', color: '#495057', fontSize: '12px' }}>
+                  <th style={{ padding: '8px 4px' }}>NFC</th>
+                  <th style={{ padding: '8px 4px' }}>Acceso</th>
+                  <th style={{ padding: '8px 4px' }}>Saldo</th>
+                  <th style={{ padding: '8px 4px' }}>Caja</th>
                 </tr>
-              ))}
-              {pulseras.length === 0 && <tr><td colSpan="4" style={{ padding: '20px', color: '#6c757d' }}>No hay pulseras registradas.</td></tr>}
-            </tbody>
-          </table>
-          <button onClick={() => setMostrarModal(true)} style={{ position: 'fixed', bottom: '25px', right: '25px', width: '65px', height: '65px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', fontSize: '35px', border: 'none', cursor: 'pointer', boxShadow: '0px 4px 12px rgba(0,0,0,0.3)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '300' }}>+</button>
+              </thead>
+              <tbody>
+                {pulseras.map((p) => (
+                  <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
+                    {/* Código NFC con salto de línea automático si es muy largo */}
+                    <td style={{ fontWeight: '500', padding: '10px 4px', wordBreak: 'break-all', fontSize: '12px' }}>{p.codigo_nfc}</td>
+                    <td style={{ padding: '10px 4px', fontSize: '12px' }}>{obtenerTextoAcceso(p.tipo_acceso_id)}</td>
+                    <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px' }}>${p.saldo}</td>
+                    <td style={{ padding: '10px 4px' }}>
+                      <button type="button" onClick={async () => {
+                        const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
+                        if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
+                        try {
+                          await axios.put(`${API_URL}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
+                          alert('¡Recarga exitosa!'); cargarPulseras();
+                        } catch (e) { alert('No se pudo procesar la recarga.'); }
+                      }} style={{ padding: '6px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>💵 Recargar</button>
+                    </td>
+                  </tr>
+                ))}
+                {pulseras.length === 0 && <tr><td colSpan="4" style={{ padding: '20px', color: '#6c757d' }}>No hay pulseras registradas.</td></tr>}
+              </tbody>
+            </table>
+
+          </div>
+
+          <button onClick={() => setMostrarModal(true)} style={{ position: 'fixed', bottom: '75px', right: '25px', width: '65px', height: '65px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', fontSize: '35px', border: 'none', cursor: 'pointer', boxShadow: '0px 4px 12px rgba(0,0,0,0.3)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '300' }}>+</button>
         </div>
       )}
 
@@ -264,7 +293,7 @@ rgarProductos();
           {/* Catálogo de Productos Móvil */}
           <div style={{ width: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#212529' }}>🍔 Catálogo de Productos</h3>
+              <h3 style={{ margin: 0, color: '#212529' }}>🍺 Catálogo de Productos</h3>
               <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                 <button type="button" onClick={async () => {
                   const c1 = window.confirm("¿Estás SEGURO de que deseas finalizar el evento? Esto borrará todas las pulseras, productos e historial.");
@@ -276,7 +305,6 @@ rgarProductos();
                     alert(res.data.mensaje); cargarPulseras(); cargarProductos();
                   } catch (err) { alert("Error al intentar reiniciar el sistema."); }
                 }} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>🧹 Limpiar Evento</button>
-                <button type="button" onClick={descargarExcelProductos} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>📥 Reporte Excel</button>
                 <button type="button" onClick={() => setMostrarModalProducto(true)} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>➕ Añadir Bebida</button>
               </div>
             </div>
@@ -331,7 +359,7 @@ rgarProductos();
         </div>
       )}
 
-      {/* VENTANA MODAL RESPONSIVA: REGISTRO PRODUCTOS */}
+            {/* VENTANA MODAL RESPONSIVA: REGISTRO PRODUCTOS */}
       {mostrarModalProducto && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', zIndex: 99999, padding: '15px', boxSizing: 'border-box' }}>
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', width: '100%', maxWidth: '400px', color: '#333', boxShadow: '0px 8px 24px rgba(0,0,0,0.2)', boxSizing: 'border-box' }}>
@@ -357,6 +385,12 @@ rgarProductos();
           </div>
         </div>
       )}
+
+      {/* 💻 FIRMA DE AUTOR PREMIUM: Ubicada perfectamente al fondo de la pantalla principal */}
+      <footer style={{ marginTop: 'auto', padding: '20px 0 10px 0', textAlign: 'center', fontSize: '11px', color: '#475569', letterSpacing: '0.5px' }}>
+        Desarrollado con ❤️ por <strong>Vania Solis</strong> &copy; {new Date().getFullYear()}
+      </footer>
+
     </div>
   );
 }

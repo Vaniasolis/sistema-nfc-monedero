@@ -125,33 +125,54 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
-// 🛒 RUTAS DE PUNTO DE VENTA (POS)
-app.post('/ventas', async (req, res) => {
+// ↩️ RUTA DE REVERSIÓN: Cancela la última venta de una pulsera, regresa saldo y devuelve stock
+app.post('/ventas/revertir', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
-    const { codigo_nfc, producto_id } = req.body;
+    const { codigo_nfc } = req.body;
+    if (!codigo_nfc) {
+      return res.status(400).json({ error: 'Código NFC obligatorio.' });
+    }
+
     await client.connect();
+
+    // 1. Buscamos la última venta registrada de esta pulsera en el evento
+    const ultimaVentaRes = await client.query(
+      'SELECT * FROM ventas WHERE pulsera_id = $1 ORDER BY fecha_venta DESC LIMIT 1;',
+      [codigo_nfc]
+    );
+
+    if (ultimaVentaRes.rows.length === 0) {
+      return res.status(404).json({ error: 'No se encontraron ventas recientes para esta pulsera.' });
+    }
+
+    // 🌟 Sintonizado con tu estilo: Leemos la fila [0]
+    const ultimaVenta = ultimaVentaRes.rows[0];
+    const montoARegresar = parseFloat(ultimaVenta.total);
+
+    // 2. Buscamos qué producto costaba exactamente eso para devolverle su pieza al stock
+    const productoRes = await client.query(
+      'SELECT id FROM productos WHERE precio = $1 LIMIT 1;',
+      [montoARegresar]
+    );
+
+    // 3. HACE LA MAGIA EN NEON CLOUD (Regresa dinero a la pulsera)
+    await client.query('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;', [montoARegresar, codigo_nfc]);
     
-    const pulserasRes = await client.query('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
-    if (pulserasRes.rows.length === 0) return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
-    
-    const productosRes = await client.query('SELECT * FROM productos WHERE id = $1;', [parseInt(producto_id)]);
-    if (productosRes.rows.length === 0) return res.status(404).json({ error: 'Producto no existe' });
+    // Si encontramos el producto, le regresamos su pieza al Stock
+    if (productoRes.rows.length > 0) {
+      const producto = productoRes.rows[0];
+      await client.query('UPDATE productos SET stock = stock + 1 WHERE id = $1;', [producto.id]);
+    }
 
-    const pulsera = pulserasRes.rows[0];
-    const producto = productosRes.rows[0];
+    // 4. Borramos ese registro de venta para limpiar el historial de caja
+    await client.query('DELETE FROM ventas WHERE id = $1;', [ultimaVenta.id]);
 
-    if (producto.stock <= 0) return res.status(400).json({ error: 'Artículo agotado en barra' });
-    if (parseFloat(pulsera.saldo) < parseFloat(producto.precio)) return res.status(400).json({ error: 'Saldo insuficiente en pulsera' });
+    return res.json({ mensaje: `↩️ Reversión exitosa. Se regresaron $${montoARegresar} a la pulsera.` });
 
-    await client.query('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2;', [producto.precio, codigo_nfc]);
-    await client.query('UPDATE productos SET stock = stock - 1 WHERE id = $1;', [parseInt(producto_id)]);
-    await client.query('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2);', [codigo_nfc, producto.precio]);
-
-    res.json({ mensaje: `¡Compra exitosa! Se descontó $${producto.precio} de tu saldo.` });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al procesar la venta cashless' });
+    console.error("❌ ERROR EN REVERSIÓN:", err.message);
+    return res.status(500).json({ error: 'No se pudo procesar la cancelación de la venta.' });
   } finally {
     await client.end();
   }
