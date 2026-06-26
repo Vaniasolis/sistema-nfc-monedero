@@ -3,9 +3,34 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 🌍 ENLACE REAL Y ACTIVO DE TU PANEL DE RAILWAY:
-  const API_URL = 'https://sistema-nfc-monedero-copy-1-production.up.railway.app';
-  
+  // 📡 ANTENAS DE INTERNET DINÁMICAS: Arranca sintonizado por defecto en tu Evento 1
+  const [apiUrlDinamica, setApiUrlDinamica] = useState('https://sistema-nfc-monedero-production.up.railway.app');
+
+  // 🧠 FUNCIÓN DE CAMBIO DE CANAL BLINDADA CON CLAVE ADMINISTRATIVA (NUEVA CONTRACERRADURA)
+  const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
+    // 🔐 Pedimos la clave secreta al operador
+    const claveIntroducida = prompt('🔒 Introduzca el código maestro de administrador para cambiar de evento:');
+    
+    // 🌟 CLAVE MAESTRA DEFINIDA: Clave secreta de seguridad
+    if (claveIntroducida === 'admin123') {
+      setApiUrlDinamica(nuevoEnlace);
+      alert('✅ Código correcto. Sintonizando nuevo canal de evento en la nube...');
+      
+      setTimeout(() => {
+        if (typeof cargarPulseras === 'function') cargarPulseras();
+        if (typeof cargarProductos === 'function') cargarProductos();
+      }, 300);
+    } else {
+      alert('❌ Código incorrecto. Acceso denegado para cambiar el evento.');
+      
+      // 🔄 TRUCO DE ORO: Regresamos el menú visual a la URL que ya estaba activa
+      if (elementoSelect) {
+        elementoSelect.value = apiUrlDinamica;
+      }
+    }
+  };
+
+  // ... Aquí continúan tus demás funciones como cargarPulseras, procesarVenta, etc. ...
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
@@ -57,7 +82,7 @@ function App() {
   const cargarPulseras = async () => {
     try { 
       // Le pedimos la lista a tu servidor en internet de forma limpia
-      const res = await axios.get(`${API_URL}/pulseras`); 
+      const res = await axios.get(`${apiUrlDinamica}/pulseras`); 
       setPulseras(res.data); 
     } catch (e) { 
       console.error("Error al cargar pulseras desde la nube:", e); 
@@ -68,7 +93,7 @@ function App() {
   const cargarProductos = async () => {
     try { 
       // Le pedimos el menú a tu servidor en internet
-      const res = await axios.get(`${API_URL}/productos`); 
+      const res = await axios.get(`${apiUrlDinamica}/productos`); 
       setProductos(res.data); 
     } catch (e) { 
       console.error("Error al cargar productos desde la nube:", e); 
@@ -78,7 +103,7 @@ function App() {
     // ➕ FUNCIÓN CORRECTA PARA REGISTRAR EN LA NUBE
   const guardarPulsera = async () => {
     try {
-      const res = await axios.post(`${API_URL}/pulseras`, {
+      const res = await axios.post(`${apiUrlDinamica}/pulseras`, {
         codigo_nfc: codigoNfc,
         tipo_acceso_id: parseInt(tipoAccesoId),
         saldo: parseFloat(saldo)
@@ -103,7 +128,7 @@ function App() {
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API_URL}/productos`, { 
+      const res = await axios.post(`${apiUrlDinamica}/productos`, { 
         nombre: nombreProducto, 
         precio: parseFloat(precioProducto), 
         stock: parseInt(stockProducto) 
@@ -121,36 +146,58 @@ function App() {
     }
   };
 
-    const procesarVenta = async (e) => {
+    // 💸 PROCESAR COMPRA CASHLESS EN LA BARRA (CORREGIDA)
+    // 💸 1. FUNCIÓN EXCLUSIVA PARA COBRAR EN LA BARRA (BOTÓN VERDE)
+  const procesarVenta = async (e) => {
     e.preventDefault();
+    if (!pulseraVenta || !productoSeleccionado) {
+      alert('Por favor llene todos los campos del punto de venta');
+      return;
+    }
     try {
-      
-      // 🚀 Mandamos los datos limpios al backend usando Axios
-      const res = await axios.post(`${API_URL}/ventas`, { 
-        codigo_nfc: pulseraVenta, 
-        producto_id: parseInt(productoSeleccionado) 
+      const res = await axios.post(`${apiUrlDinamica}/ventas`, {
+        codigo_nfc: pulseraVenta.trim(),
+        producto_id: parseInt(productoSeleccionado)
       });
+      alert(res.data.mensaje);
+      setPulseraVenta(''); // Limpia la casilla del cajero de la barra
+      cargarPulseras();    // Recarga saldos en tiempo real
+      cargarProductos();   // Recarga inventarios en tiempo real
+    } catch (err) {
+      console.error("Error en cobro:", err);
+      alert(err.response?.data?.error || 'Falla controlada en ventas');
+    }
+  };
 
-      // 🌟 Alerta única de éxito real
-      alert(res.data.mensaje || '¡Compra procesada con éxito!'); 
+  // 🎟️ 2. FUNCIÓN EXCLUSIVA PARA RECARGAR SALDO (TAQUILLA PRINCIPAL)
+  const manejarRecarga = async (e) => {
+    e.preventDefault();
+    
+    // 🌟 REGLA DE ORO: Usamos 'codigoNfc' y 'saldo' que son tus variables reales de los inputs
+    if (!codigoNfc || !saldo) {
+      alert('Por favor, ingresa el código de pulsera y el monto en la taquilla para recargar.');
+      return;
+    }
+    
+    try {
+      const res = await axios.put(`${apiUrlDinamica}/pulseras/recargar`, {
+        codigo_nfc: codigoNfc.trim(),
+        monto: parseFloat(saldo) // Lee el número limpio de tu casilla de saldo
+      });
       
-      // Limpiamos los campos del formulario
-      setPulseraVenta(''); 
-      setProductoSeleccionado(''); 
-      
-      // 🔄 Recargamos los datos limpios desde internet de forma externa
-      cargarPulseras(); 
-      cargarProductos();
-
-    } catch (e) { 
-      console.error("Falla controlada en ventas:", e);
-      alert(e.response?.data?.error || 'Error en la venta'); 
+      alert(res.data.mensaje || '¡Recarga exitosa!');
+      setCodigoNfc(''); // Limpia la casilla
+      setSaldo('');     // Limpia el saldo
+      cargarPulseras(); // Recarga tus tablas en tiempo real
+    } catch (err) {
+      console.error("Error en recarga:", err);
+      alert(err.response?.data?.error || 'Error al intentar procesar la recarga en Railway');
     }
   };
 
   const descargarExcelProductos = async () => {
     try {
-      const res = await axios.get(`${API_URL}/reporte-ventas`);
+      const res = await axios.get(`${apiUrlDinamica}/reporte-ventas`);
       const datosReporte = res.data;
       if (!datosReporte || datosReporte.length === 0) { 
         alert("Aún no se han realizado ventas para exportar."); 
@@ -189,11 +236,24 @@ function App() {
 
   return (
         // 🌟 REGLA DE ORO DE DISEÑO: Forzamos flex y minHeight para que el pie de página se vaya al fondo real del celular
-    <div style={{ padding: '15px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
+    // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
+    <div style={{ padding: '15px', paddingTop: '35px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
       
-      <h2 style={{ textAlign: 'center', margin: '30px 0 20px 0', color: '#1e293b', fontWeight: 'bold', fontSize: '22px' }}>
-        🎟️ Panel Cashless NFC
-      </h2>
+      {/* 🎛️ SELECTOR DE CANAL INTELIGENTE MULTI-EVENTO CORREGIDO CON TUS ENLACES REALES */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', backgroundColor: '#1e293b', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #334155' }}>
+        <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>CANAL:</label>
+        <select 
+          value={apiUrlDinamica}
+          onChange={(e) => cambiarCanalEvento(e.target.value, e.target)}
+          style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          {/* 🌟 Canal 1: Tu primer servidor real de toda la vida */}
+          <option value="https://sistema-nfc-monedero-production.up.railway.app">🎟️ Evento 1 (Principal)</option>
+          
+          {/* 🌟 Canal 2: Tu segundo servidor duplicado con la palabra copy-1 */}
+          <option value="https://sistema-nfc-monedero-copy-1-production.up.railway.app">🎵 Evento 2 (Copia)</option>
+        </select>
+      </div>
       
       {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', backgroundColor: '#e9ecef', padding: '5px', borderRadius: '8px' }}>
@@ -251,8 +311,7 @@ function App() {
                       <button type="button" onClick={async () => {
                         const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
                         if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
-                        try {
-                          await axios.put(`${API_URL}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
+                        try {await axios.put(`${apiUrlDinamica}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
                           alert('¡Recarga exitosa!'); cargarPulseras();
                         } catch (e) { alert('No se pudo procesar la recarga.'); }
                       }} style={{ padding: '6px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>💵 Recargar</button>
@@ -276,17 +335,37 @@ function App() {
           <div style={{ border: '1px solid #ced4da', padding: '20px', borderRadius: '8px', width: '100%', backgroundColor: 'white', boxSizing: 'border-box', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
             <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#212529' }}>📱 Registrar Cobro</h3>
             <form onSubmit={procesarVenta} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {/* 📱 CASILLA DE LECTURA DE PULSERA NFC CORREGIDA */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontWeight: 'bold', color: '#495057', fontSize: '15px' }}>Escanear/Ingresar Pulsera:</label>
-                <input type="text" value={pulseraVenta} onChange={(e) => setPulseraVenta(e.target.value)} placeholder="Ej: NFC0001" required style={{ padding: '12px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '16px' }} />
+                <label style={{ fontWeight: 'bold', color: '#495057', fontSize: '15px' }}>Escanear Pulsera NFC:</label>
+                <input 
+                  type="text" 
+                  value={pulseraVenta} 
+                  onChange={(e) => setPulseraVenta(e.target.value)} 
+                  placeholder="Ej: NFC0001" 
+                  required 
+                  style={{ padding: '12px', borderRadius: '6px', border: '1px solid #ced4da', backgroundColor: '#0f172a', color: 'white', fontSize: '16px', boxSizing: 'border-box' }} 
+                />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              
+
+              {/* 🍺 MENÚ DESPLEGABLE DE ARTÍCULOS CORREGIDO */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
                 <label style={{ fontWeight: 'bold', color: '#495057', fontSize: '15px' }}>Seleccionar Artículo:</label>
-                <select value={productoSeleccionado} onChange={(e) => setProductoSeleccionado(e.target.value)} required style={{ padding: '12px', borderRadius: '6px', border: '1px solid #ced4da', backgroundColor: 'white', fontSize: '16px' }}>
-                  <option value="">-- Seleccione un artículo --</option>
-                  {productos.map((prod) => <option key={prod.id} value={prod.id}>{prod.nombre} (${prod.precio})</option>)}
+                <select 
+                  value={productoSeleccionado} 
+                  onChange={(e) => setProductoSeleccionado(e.target.value)} 
+                  style={{ padding: '12px', borderRadius: '4px', border: '1px solid #475569', backgroundColor: '#0f172a', color: 'white', fontSize: '15px', cursor: 'pointer' }}
+                >
+                  {/* 🌟 REGLA DE ORO: Recorremos los productos del evento de forma inteligente */}
+                  {productos.map((prod) => (
+                    <option key={prod.id} value={prod.id} style={{ backgroundColor: '#0f172a', color: 'white' }}>
+                      {prod.nombre} - ${prod.precio} (Stock: {prod.stock})
+                    </option>
+                  ))}
                 </select>
               </div>
+
               {/* Botón Verde Original de Cobros */}
               <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '2px', border: 'none', backgroundColor: '#28a745', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>
                 Confirmar Compra Cashless
@@ -316,7 +395,7 @@ function App() {
               >
                 ↩️ Cancelar Última Venta / Reversión
               </button>
-              
+
             </form>
           </div>
 
