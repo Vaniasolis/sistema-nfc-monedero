@@ -199,56 +199,55 @@ app.post('/ventas', async (req, res) => {
   }
 });
 
-// ↩️ RUTA DE REVERSIÓN: Cancela la última venta de una pulsera, regresa saldo y devuelve stock
+// ↩️ RUTA DE REVERSIÓN INTRADESTRUCTIBLE CORREGIDA CON EL CAJÓN ROWS[0]
 app.post('/ventas/revertir', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
     const { codigo_nfc } = req.body;
-    if (!codigo_nfc) {
-      return res.status(400).json({ error: 'Código NFC obligatorio.' });
-    }
-
     await client.connect();
 
-    // 1. Buscamos la última venta registrada de esta pulsera en el evento
-    const ultimaVentaRes = await client.query(
-      'SELECT * FROM ventas WHERE pulsera_id = $1 ORDER BY fecha_venta DESC LIMIT 1;',
+    // 1. Buscamos la ÚLTIMA venta registrada para esta pulsera específica
+    const buscarVenta = await client.query(
+      'SELECT * FROM ventas WHERE pulsera_id = $1 ORDER BY id DESC LIMIT 1;',
       [codigo_nfc]
     );
 
-    if (ultimaVentaRes.rows.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron ventas recientes para esta pulsera.' });
+    if (buscarVenta.rowCount === 0) {
+      return res.status(400).json({ error: 'No se encontraron compras registradas para esta pulsera.' });
     }
 
-    // 🌟 CORRECCIÓN EXPLICITA: Leemos el índice [0] del primer registro del arreglo
-    const ultimaVenta = ultimaVentaRes.rows[0];
-    const montoARegresar = parseFloat(ultimaVenta.total);
+    // 🌟 LA CLAVE DE ORO: Extraemos de forma estricta el primer registro del arreglo de filas rows[0]
+    const ultimaVenta = buscarVenta.rows[0]; 
+    const montoARedimir = parseFloat(ultimaVenta.total);
+    const idProducto = ultimaVenta.producto_id;
 
-    // 2. Buscamos qué producto costaba exactamente eso para devolverle su pieza al stock
-    const productoRes = await client.query(
-      'SELECT id FROM productos WHERE precio = $1 LIMIT 1;',
-      [montoARegresar]
+    // 2. Iniciamos una transacción segura en Postgres
+    await client.query('BEGIN;');
+
+    // A) Le devolvemos el dinero a la pulsera
+    await client.query(
+      'UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;',
+      [montoARedimir, codigo_nfc]
     );
 
-    // 3. HACE LA MAGIA EN NEON CLOUD (Regresa el dinero robado a la pulsera)
-    await client.query('UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;', [montoARegresar, codigo_nfc]);
-    
-    // Si encontramos el producto, le regresamos su pieza de inmediato al Stock
-    if (productoRes.rows.length > 0) {
-      const producto = productoRes.rows[0]; // 🌟 Índice [0] integrado
-      await client.query('UPDATE productos SET stock = stock + 1 WHERE id = $1;', [producto.id]);
+    // B) Le regresamos la pieza al inventario de productos
+    if (idProducto) {
+      await client.query(
+        'UPDATE productos SET stock = stock + 1 WHERE id = $1;',
+        [idProducto]
+      );
     }
 
-    // 4. Borramos ese registro de venta para limpiar el historial y cuadrar la caja
+    // C) Borramos la venta del historial para cerrar la cancelación
     await client.query('DELETE FROM ventas WHERE id = $1;', [ultimaVenta.id]);
 
-    return res.json({ mensaje: `↩️ Reversión exitosa. Se regresaron $${montoARegresar} a la pulsera.` });
+    await client.query('COMMIT;');
+    return res.json({ mensaje: `↩️ Reversión exitosa. Se abonaron $${montoARedimir} a la pulsera y se restituyó el stock.` });
 
   } catch (err) {
+    await client.query('ROLLBACK;');
     console.error("❌ ERROR EN REVERSIÓN:", err.message);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'No se pudo procesar la cancelación de la venta.' });
-    }
+    return res.status(500).json({ error: 'No se pudo procesar la cancelación de la venta.' });
   } finally {
     await client.end();
   }

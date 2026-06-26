@@ -280,15 +280,18 @@ function App() {
         </button>
       </div>
 
+            {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
       {pestañaActiva === 'pulseras' && (
         <div>
+          {/* Bloque Gris de Estadísticas */}
           <div style={{ display: "flex", marginBottom: "15px" }}>
             <div style={{ flex: 1, border: "1px solid #ced4da", padding: "15px", borderRadius: "8px", backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', textAlign: 'center' }}>
               <h4 style={{ margin: 0, color: '#6c757d', fontSize: '14px', uppercase: 'true' }}>Total Pulseras</h4>
               <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
             </div>
           </div>
-                    {/* 📱 CONTENEDOR AJUSTADO AL 100% */}
+
+          {/* 📱 TABLA ADAPTADA CON TODAS LAS COLUMNAS REALES DE TU FOTO + ACCIÓN */}
           <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box' }}>
             <table border="1" cellPadding="4" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
               <thead>
@@ -297,7 +300,7 @@ function App() {
                   <th style={{ padding: '8px 4px' }}>Acceso</th>
                   <th style={{ padding: '8px 4px' }}>Saldo</th>
                   <th style={{ padding: '8px 4px' }}>Caja</th>
-                  <th style={{ padding: '8px 4px' }}>Acción</th> {/* 🌟 NUEVA COLUMNA DE CONTROL */}
+                  <th style={{ padding: '8px 4px' }}>Acción</th> {/* 🌟 Tu nueva columna de protección */}
                 </tr>
               </thead>
               <tbody>
@@ -307,7 +310,7 @@ function App() {
                     <td style={{ padding: '10px 4px', fontSize: '12px' }}>{obtenerTextoAcceso(p.tipo_acceso_id)}</td>
                     <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px' }}>${p.saldo}</td>
                     
-                    {/* Botón Verde Original de Recargar */}
+                    {/* Columna Caja: Botón de Recargar de tu foto */}
                     <td style={{ padding: '10px 4px' }}>
                       <button type="button" onClick={async () => {
                         const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
@@ -319,31 +322,27 @@ function App() {
                       }} style={{ padding: '6px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>💵 Recargar</button>
                     </td>
 
-                    {/* 🗑️ BOTE DE BASURA ROJO CON LA CONTRASEÑA DE SEGURIDAD ADMIN123 */}
+                    {/* Columna Acción: 🗑️ Bote de Basura con Candado admin123 */}
                     <td style={{ padding: '10px 4px' }}>
                       <button 
                         type="button" 
                         onClick={async () => {
-                          // 🔐 1. Pedimos de forma obligatoria la clave del supervisor
                           const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
                           if (!claveSeguridad) return;
 
-                          // 🛡️ 2. Validamos que coincida con tu clave maestro
                           if (claveSeguridad !== 'admin123') {
                             alert('❌ Clave incorrecta. Acción denegada.');
                             return;
                           }
 
-                          // ⚠️ 3. Confirmación de doble chequeo
                           if (!window.confirm(`¿Confirmas la eliminación permanente de la pulsera ${p.codigo_nfc}?`)) {
                             return;
                           }
 
                           try {
-                            // 🌟 CORRECCIÓN CRUCIAL: Debe ser estrictamente 'axios.delete'
                             const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
                             alert(res.data.mensaje);
-                            cargarPulseras(); // Refresca tu lista en la pantalla al instante
+                            cargarPulseras(); 
                           } catch (e) {
                             alert(e.response?.data?.error || 'No se pudo eliminar la pulsera.');
                           }
@@ -360,6 +359,16 @@ function App() {
               </tbody>
             </table>
           </div>
+
+          {/* 🔵 TU BOTÓN FLOTANTE ORIGINAL RECONSTRUIDO */}
+          <button 
+            type="button" 
+            onClick={() => setMostrarModal(true)} // 🌟 REEMPLAZA AQUÍ con el nombre exacto de tu función original
+            style={{ position: 'fixed', bottom: '80px', right: '20px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#007bff', color: 'white', border: 'none', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,123,255,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
+          >
+            +
+          </button>
+
         </div>
       )}
 
@@ -417,7 +426,7 @@ function App() {
                   }
 
                   try {
-                    const res = await axios.post(`${API_URL}/ventas/revertir`, { codigo_nfc: codigoPulsera });
+                    const res = await axios.post(`${apiUrlDinamica}/ventas/revertir`, { codigo_nfc: codigoPulsera });
                     alert(res.data.mensaje || '¡Venta cancelada con éxito!');
                     if (typeof cargarPulseras === 'function') cargarPulseras();
                     if (typeof cargarProductos === 'function') cargarProductos();
@@ -445,7 +454,7 @@ function App() {
                   const c2 = prompt("Para confirmar la eliminación absoluta, escribe la palabra: REINICIAR");
                   if (c2 !== "REINICIAR") { alert("Confirmación incorrecta."); return; }
                   try {
-                    const res = await axios.post(`${API_URL}/api/sistema/reiniciar-evento`);
+                    const res = await axios.post(`${apiUrlDinamica}/api/sistema/reiniciar-evento`);
                     alert(res.data.mensaje); cargarPulseras(); cargarProductos();
                   } catch (err) { alert("Error al intentar reiniciar el sistema."); }
                 }} 
