@@ -334,11 +334,3 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
 });
-
-
-// El puerto dinámico comercial de Railway (SIEMPRE AL FINAL)
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
-});
-
