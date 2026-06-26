@@ -125,6 +125,31 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
+// 🧹 RUTA DE REINICIO TOTAL: Vacía ventas y pulseras para dejar el evento limpio en ceros
+app.delete('/pulseras/limpiar', async (req, res) => {
+  const client = new Client(process.env.DATABASE_URL);
+  try {
+    await client.connect();
+
+    // 🌟 REGLA DE ORO: Borramos primero el historial de ventas para liberar los candados relacionales
+    await client.query('DELETE FROM ventas;');
+    
+    // Ahora que las ventas están vacías, ya podemos limpiar las pulseras sin bloqueos
+    await client.query('DELETE FROM pulseras;');
+
+    return res.json({ mensaje: '🧹 Evento reiniciado con éxito. Todos los registros de pulseras y ventas han sido vaciados.' });
+
+  } catch (err) {
+    console.error("❌ ERROR AL LIMPIAR EVENTO EN BACKEND:", err.message);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'No se pudo vaciar la base de datos del evento.' });
+    }
+  } finally {
+    await client.end();
+  }
+});
+
+
 // 🛒 RUTAS DE PUNTO DE VENTA (POS) - CORREGIDA SIN RESPUESTAS DUPLICADAS
 app.post('/ventas', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
