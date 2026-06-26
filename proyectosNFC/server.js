@@ -199,14 +199,14 @@ app.post('/ventas', async (req, res) => {
   }
 });
 
-// ↩️ RUTA DE REVERSIÓN INTRADESTRUCTIBLE CORREGIDA CON EL CAJÓN ROWS[0]
+// ↩️ RUTA DE REVERSIÓN INTRADESTRUCTIBLE CORREGIDA COMO POST
 app.post('/ventas/revertir', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
     const { codigo_nfc } = req.body;
     await client.connect();
 
-    // 1. Buscamos la ÚLTIMA venta registrada para esta pulsera específica
+    // 1. Buscamos la ULTIMA venta registrada para esta pulsera específica
     const buscarVenta = await client.query(
       'SELECT * FROM ventas WHERE pulsera_id = $1 ORDER BY id DESC LIMIT 1;',
       [codigo_nfc]
@@ -216,9 +216,9 @@ app.post('/ventas/revertir', async (req, res) => {
       return res.status(400).json({ error: 'No se encontraron compras registradas para esta pulsera.' });
     }
 
-    // 🌟 LA CLAVE DE ORO: Extraemos de forma estricta el primer registro del arreglo de filas rows[0]
+    // Extraemos el primer registro del arreglo de filas rows de Postgres
     const ultimaVenta = buscarVenta.rows[0]; 
-    const montoARedimir = parseFloat(ultimaVenta.total);
+    const montoARedimir = parseFloat(ultimaVenta.total || 0);
     const idProducto = ultimaVenta.producto_id;
 
     // 2. Iniciamos una transacción segura en Postgres
@@ -230,7 +230,7 @@ app.post('/ventas/revertir', async (req, res) => {
       [montoARedimir, codigo_nfc]
     );
 
-    // B) Le regresamos la pieza al inventario de productos
+    // B) Le regresamos la pieza al inventario de productos (si existe)
     if (idProducto) {
       await client.query(
         'UPDATE productos SET stock = stock + 1 WHERE id = $1;',
@@ -238,7 +238,7 @@ app.post('/ventas/revertir', async (req, res) => {
       );
     }
 
-    // C) Borramos la venta del historial para cerrar la cancelación
+    // C) Borramos la venta del historial para cerrar la cancelación de forma limpia
     await client.query('DELETE FROM ventas WHERE id = $1;', [ultimaVenta.id]);
 
     await client.query('COMMIT;');
