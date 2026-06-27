@@ -3,8 +3,8 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 📡 ANTENAS DE INTERNET DINÁMICAS: Arranca sintonizado por defecto en tu Evento 1
-  const [apiUrlDinamica, setApiUrlDinamica] = useState('https://sistema-nfc-monedero-production.up.railway.app');
+  // 📡 ANTENAS DE INTERNET DINÁMICAS: Arranca sintonizado por defecto en tu Evento
+const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
 
   // 🧠 FUNCIÓN DE CAMBIO DE CANAL BLINDADA CON CLAVE ADMINISTRATIVA (NUEVA CONTRACERRADURA)
   const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {

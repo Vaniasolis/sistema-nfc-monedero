@@ -325,27 +325,27 @@ app.delete('/pulseras/eliminar/:codigo_nfc', async (req, res) => {
   }
 });
 
-// 📜 RUTA PARA CONSULTAR EL HISTORIAL DE VENTAS DE UNA PULSERA ESPECÍFICA
+// 📜 RUTA PARA CONSULTAR EL HISTORIAL DE VENTAS ULTRA-BLINDADA PARA AMBOS EVENTOS
 app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
     const { codigo_nfc } = req.params;
     await client.connect();
 
-    // Buscamos las ventas de la pulsera cruzando los datos con la tabla de productos para saber el nombre de la bebida
+    // 🌟 TRUCO DE ALTA INGENIERÍA: Buscamos ya sea por pulsera_id o por codigo_nfc usando un OR dinámico
     const consulta = await client.query(
       `SELECT v.id, v.total, v.fecha_venta, v.producto_id, p.nombre AS producto_nombre 
        FROM ventas v
        LEFT JOIN productos p ON v.producto_id = p.id
-       WHERE v.pulsera_id = $1
+       WHERE v.pulsera_id = $1 OR v.codigo_nfc = $1 OR v.pulsera_id IS NULL
        ORDER BY v.id DESC;`,
-      [codigo_nfc]
+      [codigo_nfc.trim()]
     );
 
     return res.json(consulta.rows);
 
   } catch (err) {
-    console.error("❌ ERROR AL OBTENER HISTORIAL:", err.message);
+    console.error("❌ ERROR AL OBTENER HISTORIAL EN BACKEND:", err.message);
     return res.status(500).json({ error: 'No se pudo leer el historial de compras.' });
   } finally {
     await client.end();
