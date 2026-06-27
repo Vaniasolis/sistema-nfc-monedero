@@ -347,7 +347,8 @@ app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
 
   } catch (err) {
     console.error("❌ ERROR AL OBTENER HISTORIAL EN BACKEND:", err.message);
-    return res.status(500).json({ error: 'No se pudo leer el historial de compras.' });
+    // 🌟 CAMBIAMOS ESTA LÍNEA PARA QUE TE DIGA EL ERROR REAL DE POSTGRES EN LA PANTALLA:
+    return res.status(500).json({ error: `Falla en Postgres: ${err.message}` });
   } finally {
     await client.end();
   }
