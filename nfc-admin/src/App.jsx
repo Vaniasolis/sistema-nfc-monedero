@@ -50,6 +50,12 @@ function App() {
   const [precioProducto, setPrecioProducto] = useState('');
   const [stockProducto, setStockProducto] = useState('');
 
+    // 🌟 NUEVOS ESTADOS PARA LA VENTANA DE HISTORIAL Y REVERSIÓN QUIRÚRGICA
+  const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
+  const [historialVentas, setHistorialVentas] = useState([]);
+  const [pulseraSeleccionadaHistorial, setPulseraSeleccionadaHistorial] = useState('');
+
+
    // 🛰️ MOTOR NFC UNIVERSAL: Captura el UID de cualquier chip del planeta (Tarjetas o Pulseras)
   useEffect(() => {
     cargarPulseras();
@@ -415,29 +421,35 @@ function App() {
                 Confirmar Compra Cashless
               </button>
               {/* ↩️ BOTÓN DE EMERGENCIA DE REVERSIÓN AUTÓNOMO */}
+              {/* ↩️ BOTÓN INTELIGENTE: ABRE LA NUEVA VENTANA DE HISTORIAL DE COMPRAS */}
               <button 
                 type="button" 
                 onClick={async () => {
-                  const codigoPulsera = prompt('Por favor, ingresa o escanea el código de la pulsera para cancelar su última venta:');
-                  if (!codigoPulsera) return;
-
-                  if (!window.confirm(`¿Estás seguro de que deseas cancelar la última venta de la pulsera ${codigoPulsera}?`)) {
-                    return;
-                  }
+                  const codigoPulsera = prompt('Por favor, ingresa o escanea el código de la pulsera para ver su historial de compras:');
+                  if (!codigoPulsera || !codigoPulsera.trim()) return;
 
                   try {
-                    const res = await axios.post(`${apiUrlDinamica}/ventas/revertir`, { codigo_nfc: codigoPulsera });
-                    alert(res.data.mensaje || '¡Venta cancelada con éxito!');
-                    if (typeof cargarPulseras === 'function') cargarPulseras();
-                    if (typeof cargarProductos === 'function') cargarProductos();
+                    // 📡 Consultamos la nueva ruta que lee el historial del cliente
+                    const res = await axios.get(`${apiUrlDinamica}/ventas/historial/${codigoPulsera.trim()}`);
+                    
+                    if (res.data.length === 0) {
+                      alert('ℹ️ Esta pulsera no tiene ninguna compra registrada en este evento.');
+                      return;
+                    }
+
+                    // Guardamos las compras y abrimos la hermosa ventana modal emergente
+                    setHistorialVentas(res.data);
+                    setPulseraSeleccionadaHistorial(codigoPulsera.trim());
+                    setMostrarModalHistorial(true);
+
                   } catch (e) {
-                    console.error("Error en la reversión:", e);
-                    alert(e.response?.data?.error || 'Error al intentar revertir la venta.');
+                    console.error("Error al obtener historial:", e);
+                    alert('❌ No se pudo conectar con el servidor para leer el historial.');
                   }
                 }} 
-                style={{ width: '100%', marginTop: '12px', padding: '12px', borderRadius: '6px', border: '1px solid #dc3545', backgroundColor: 'transparent', color: '#dc3545', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxSizing: 'border-box' }}
+                style={{ width: '100%', marginTop: '5px', padding: '12px', borderRadius: '6px', border: '1px solid #dc3545', backgroundColor: 'transparent', color: '#dc3545', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', boxSizing: 'border-box' }}
               >
-                ↩️ Cancelar Última Venta / Reversión
+                ↩️ Cancelar Venta Específica / Historial
               </button>
 
             </form>
@@ -541,6 +553,64 @@ function App() {
                 <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '6px', border: 'none', backgroundColor: '#28a745', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>Agregar al Menú</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+       {/* 🖼️ VENTANA MODAL FLOTANTE DE HISTORIAL Y REVERSIÓN QUIRÚRGICA */}
+      {mostrarModalHistorial && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '15px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', width: '100%', maxWidth: '450px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #dee2e6', paddingBottom: '10px' }}>
+              <h3 style={{ margin: 0, color: '#111827', fontSize: '16px' }}>📜 Compras de: <strong style={{ color: '#007bff' }}>{pulseraSeleccionadaHistorial}</strong></h3>
+              <button onClick={() => setMostrarModalHistorial(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280', fontWeight: 'bold' }}>✕</button>
+            </div>
+
+            <p style={{ margin: 0, fontSize: '13px', color: '#4b5563' }}>Selecciona con tu dedo cuál bebida deseas cancelar del saldo de la pulsera:</p>
+
+            {/* Lista con scroll de artículos comprados */}
+            <div style={{ maxHieght: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '5px' }}>
+              {historialVentas.map((ticket) => (
+                <div key={ticket.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 'bold', color: '#1f2937', fontSize: '13px' }}>🍺 {ticket.producto_nombre || 'Artículo de Barra'}</span>
+                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>{new Date(ticket.fecha_venta).toLocaleTimeString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontWeight: 'bold', color: '#dc2626', fontSize: '14px' }}>-${ticket.total}</span>
+                    
+                    {/* Botón de borrado quirúrgico por ID de ticket exacto */}
+                    <button 
+                      type="button"
+                      onClick={async () => {
+                        // 🔐 Solicitamos la clave de supervisor antes de eliminar una compra
+                        const claveSuper = prompt('🔒 AUTORIZACIÓN DE BARRA:\nIntroduzca la clave de administrador para deshacer este cobro:');
+                        if (!claveSuper) return;
+                        if (claveSuper !== 'admin123') { alert('❌ Clave incorrecta.'); return; }
+
+                        if (!window.confirm(`¿Confirmas la cancelación de esta compra? Se devolverán $${ticket.total} a la pulsera.`)) return;
+
+                        try {
+                          // 📡 Mandamos la orden al backend con el ID del ticket exacto
+                          const res = await axios.post(`${apiUrlDinamica}/ventas/revertir`, { venta_id: ticket.id });
+                          alert(res.data.mensaje || '¡Reversión completada!');
+                          
+                          setMostrarModalHistorial(false); // Cerramos la ventana
+                          cargarPulseras(); // Refrescamos listas en vivo
+                          cargarProductos();
+                        } catch (err) {
+                          alert(err.response?.data?.error || 'No se pudo procesar la cancelación.');
+                        }
+                      }}
+                      style={{ padding: '6px 10px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}
+                    >
+                      ↩️ Cancelar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
       )}
