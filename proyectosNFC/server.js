@@ -325,24 +325,25 @@ app.delete('/pulseras/eliminar/:codigo_nfc', async (req, res) => {
   }
 });
 
-// 📜 RUTA PARA CONSULTAR EL HISTORIAL DE VENTAS ULTRA-BLINDADA PARA AMBOS EVENTOS
+// 📜 RUTA PARA CONSULTAR EL HISTORIAL DE VENTAS PERFECTA Y SIN FILTROS ROTOS
 app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
     const { codigo_nfc } = req.params;
     await client.connect();
 
-    // 🌟 TRUCO DE ALTA INGENIERÍA: Buscamos ya sea por pulsera_id o por codigo_nfc usando un OR dinámico
+    // 📡 Hacemos la consulta limpia cruzando las tablas para jalar el nombre del artículo
     const consulta = await client.query(
       `SELECT v.id, v.total, v.fecha_venta, v.producto_id, p.nombre AS producto_nombre 
        FROM ventas v
        LEFT JOIN productos p ON v.producto_id = p.id
-       WHERE v.pulsera_id = $1 OR v.codigo_nfc = $1 OR v.pulsera_id IS NULL
+       WHERE v.pulsera_id = $1 OR v.codigo_nfc = $1
        ORDER BY v.id DESC;`,
       [codigo_nfc.trim()]
     );
 
-    return res.json(consulta.rows);
+    // 🌟 LA REGLA DE ORO: Mandamos estrictamente las filas limpias rows al frontend
+    return res.json(consulta.rows || []);
 
   } catch (err) {
     console.error("❌ ERROR AL OBTENER HISTORIAL EN BACKEND:", err.message);
@@ -351,6 +352,7 @@ app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
     await client.end();
   }
 });
+
 // El puerto dinámico comercial de Railway (SIEMPRE AL FINAL)
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
