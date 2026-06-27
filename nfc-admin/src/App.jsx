@@ -453,10 +453,15 @@ function App() {
                   if (!c1) return;
                   const c2 = prompt("Para confirmar la eliminación absoluta, escribe la palabra: REINICIAR");
                   if (c2 !== "REINICIAR") { alert("Confirmación incorrecta."); return; }
-                  try {
-                    const res = await axios.post(`${apiUrlDinamica}/api/sistema/reiniciar-evento`);
-                    alert(res.data.mensaje); cargarPulseras(); cargarProductos();
-                  } catch (err) { alert("Error al intentar reiniciar el sistema."); }
+                   try {
+                    // 🌟 CORREGIDO AQUÍ: Cambiamos el .post viejo por .delete y apuntamos a /pulseras/limpiar
+                    const res = await axios.delete(`${apiUrlDinamica}/pulseras/limpiar`);
+                    alert(res.data.mensaje || '🧹 Evento reiniciado con éxito.');
+                    cargarPulseras(); 
+                    cargarProductos();
+                  } catch (err) { 
+                    alert("Error al intentar reiniciar el sistema."); 
+                  }
                 }} 
                 style={{ flex: 1, padding: '12px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>🧹 Limpiar Evento</button>
                 <button type="button" onClick={() => setMostrarModalProducto(true)} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>➕ Añadir Bebida</button>

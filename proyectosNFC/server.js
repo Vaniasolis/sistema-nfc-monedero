@@ -199,38 +199,35 @@ app.post('/ventas', async (req, res) => {
   }
 });
 
-// ↩️ RUTA DE REVERSIÓN INTRADESTRUCTIBLE CORREGIDA COMO POST
+// ↩️ RUTA DE REVERSIÓN POR ID DE COMPRA EXACTO
 app.post('/ventas/revertir', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
-    const { codigo_nfc } = req.body;
+    // 🌟 RECIBIMOS EL ID DEL TICKET DE COMPRA EXACTO DESDE LA NUEVA VENTANA DE REACT
+    const { venta_id } = req.body;
     await client.connect();
 
-    // 1. Buscamos la ULTIMA venta registrada para esta pulsera específica
-    const buscarVenta = await client.query(
-      'SELECT * FROM ventas WHERE pulsera_id = $1 ORDER BY id DESC LIMIT 1;',
-      [codigo_nfc]
-    );
-
+    // 1. Buscamos la venta específica en el historial
+    const buscarVenta = await client.query('SELECT * FROM ventas WHERE id = $1;', [parseInt(venta_id)]);
     if (buscarVenta.rowCount === 0) {
-      return res.status(400).json({ error: 'No se encontraron compras registradas para esta pulsera.' });
+      return res.status(400).json({ error: 'El ticket de compra no existe o ya fue cancelado.' });
     }
 
-    // Extraemos el primer registro del arreglo de filas rows de Postgres
-    const ultimaVenta = buscarVenta.rows[0]; 
-    const montoARedimir = parseFloat(ultimaVenta.total || 0);
-    const idProducto = ultimaVenta.producto_id;
+    const ticket = buscarVenta.rows[0];
+    const codigoNfc = ticket.pulsera_id;
+    const montoARedimir = parseFloat(ticket.total);
+    const idProducto = ticket.producto_id;
 
-    // 2. Iniciamos una transacción segura en Postgres
+    // 2. Iniciamos la transacción segura en Postgres
     await client.query('BEGIN;');
 
-    // A) Le devolvemos el dinero a la pulsera
+    // A) Devolvemos el dinero exacto a la pulsera del cliente
     await client.query(
       'UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2;',
-      [montoARedimir, codigo_nfc]
+      [montoARedimir, codigoNfc]
     );
 
-    // B) Le regresamos la pieza al inventario de productos (si existe)
+    // B) Restituimos la pieza al stock del catálogo de la barra
     if (idProducto) {
       await client.query(
         'UPDATE productos SET stock = stock + 1 WHERE id = $1;',
@@ -238,16 +235,16 @@ app.post('/ventas/revertir', async (req, res) => {
       );
     }
 
-    // C) Borramos la venta del historial para cerrar la cancelación de forma limpia
-    await client.query('DELETE FROM ventas WHERE id = $1;', [ultimaVenta.id]);
+    // C) Eliminamos este ticket específico del historial de ventas
+    await client.query('DELETE FROM ventas WHERE id = $1;', [parseInt(venta_id)]);
 
     await client.query('COMMIT;');
-    return res.json({ mensaje: `↩️ Reversión exitosa. Se abonaron $${montoARedimir} a la pulsera y se restituyó el stock.` });
+    return res.json({ mensaje: `↩️ Cancelación exitosa. Se reintegraron $${montoARedimir} a la pulsera.` });
 
   } catch (err) {
     await client.query('ROLLBACK;');
     console.error("❌ ERROR EN REVERSIÓN:", err.message);
-    return res.status(500).json({ error: 'No se pudo procesar la cancelación de la venta.' });
+    return res.status(500).json({ error: 'No se pudo procesar la cancelación del artículo.' });
   } finally {
     await client.end();
   }
@@ -328,8 +325,35 @@ app.delete('/pulseras/eliminar/:codigo_nfc', async (req, res) => {
   }
 });
 
+// 📜 RUTA PARA CONSULTAR EL HISTORIAL DE VENTAS DE UNA PULSERA ESPECÍFICA
+app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
+  const client = new Client(process.env.DATABASE_URL);
+  try {
+    const { codigo_nfc } = req.params;
+    await client.connect();
+
+    // Buscamos las ventas de la pulsera cruzando los datos con la tabla de productos para saber el nombre de la bebida
+    const consulta = await client.query(
+      `SELECT v.id, v.total, v.fecha_venta, v.producto_id, p.nombre AS producto_nombre 
+       FROM ventas v
+       LEFT JOIN productos p ON v.producto_id = p.id
+       WHERE v.pulsera_id = $1
+       ORDER BY v.id DESC;`,
+      [codigo_nfc]
+    );
+
+    return res.json(consulta.rows);
+
+  } catch (err) {
+    console.error("❌ ERROR AL OBTENER HISTORIAL:", err.message);
+    return res.status(500).json({ error: 'No se pudo leer el historial de compras.' });
+  } finally {
+    await client.end();
+  }
+});
 // El puerto dinámico comercial de Railway (SIEMPRE AL FINAL)
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
 });
+
