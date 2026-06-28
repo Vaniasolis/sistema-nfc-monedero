@@ -23,14 +23,11 @@
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
             android:exported="true">
-            <!-- 🎯 FILTROS DE INTERCEPCIÓN NATIVA PARA TARJETAS Y PULSERAS CASHLESS -->
+
+            {/* 🌟 MANTÉN EXCLUSIVAMENTE ESTE INTENT PARA QUE ANDROID NO INTERRUMPA TU PANTALLA */}
             <intent-filter>
-                <action android:name="android.nfc.action.TAG_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.nfc.action.TECH_DISCOVERED" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
 

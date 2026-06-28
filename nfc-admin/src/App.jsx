@@ -56,33 +56,12 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
   const [pulseraSeleccionadaHistorial, setPulseraSeleccionadaHistorial] = useState('');
 
 
-   // 🛰️ MOTOR NFC UNIVERSAL: Captura el UID de cualquier chip del planeta (Tarjetas o Pulseras)
+    // 📱 CONFIGURACIÓN DE ARRANQUE: CARGA DATOS Y SE ADUEÑA DE LA ANTENA NFC DEL CELULAR
+    // 📱 CONFIGURACIÓN DE ARRANQUE LIMPIA Y ESTABLE
   useEffect(() => {
     cargarPulseras();
     cargarProductos();
-
-    // Verificamos si el plugin nativo está montado en el celular
-    if (window.nfc) {
-      // 🌟 CAMBIO CLAVE: Usamos 'addTagDiscoveredListener' para leer identificadores base (UID)
-      window.nfc.addTagDiscoveredListener(
-        (nfcEvent) => {
-          const tag = nfcEvent.tag;
-          if (tag && tag.id) {
-            // Convertimos los bytes nativos del chip a una cadena de texto limpia
-            const codigoHex = window.nfc.bytesToHexString(tag.id).toUpperCase();
-            
-            if (codigoHex) {
-              setCodigoNfc(codigoHex);
-              setMostrarModal(true); // Forzamos al formulario a abrirse con el código inyectado
-              alert(`¡Chip NFC Detectado con éxito!\nCódigo: ${codigoHex}`);
-            }
-          }
-        },
-        () => console.log('✅ Antena universal NFC del Samsung S25 en línea...'),
-        (err) => console.error('❌ Error en hardware NFC:', err)
-      );
-    }
-  }, []);
+  }, []); // Arranca rápido y no toca la antena por código nativo
 
     // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
   const cargarPulseras = async () => {
@@ -156,22 +135,19 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
     // 💸 1. FUNCIÓN EXCLUSIVA PARA COBRAR EN LA BARRA (BOTÓN VERDE)
   const procesarVenta = async (e) => {
     e.preventDefault();
-    if (!pulseraVenta || !productoSeleccionado) {
-      alert('Por favor llene todos los campos del punto de venta');
-      return;
-    }
+    if (!pulseraVenta || !productoSeleccionado) return;
+
     try {
       const res = await axios.post(`${apiUrlDinamica}/ventas`, {
-        codigo_nfc: pulseraVenta.trim(),
+        codigo_nfc: pulseraVenta.trim().toUpperCase(),
         producto_id: parseInt(productoSeleccionado)
       });
       alert(res.data.mensaje);
-      setPulseraVenta(''); // Limpia la casilla del cajero de la barra
-      cargarPulseras();    // Recarga saldos en tiempo real
-      cargarProductos();   // Recarga inventarios en tiempo real
+      setPulseraVenta('');
+      cargarPulseras();
+      cargarProductos();
     } catch (err) {
-      console.error("Error en cobro:", err);
-      alert(err.response?.data?.error || 'Falla controlada en ventas');
+      alert(err.response?.data?.error || 'Error en cobro.');
     }
   };
 
@@ -443,7 +419,7 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
                     setMostrarModalHistorial(true);
 
                   } catch (e) {
-                    console.error("Error al obtener historial:", e);
+                    console.error("Error al obtener historial:", error);
                     alert('❌ No se pudo conectar con el servidor para leer el historial.');
                   }
                 }} 
