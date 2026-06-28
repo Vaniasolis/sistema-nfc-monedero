@@ -158,7 +158,10 @@ app.post('/ventas', async (req, res) => {
     await client.connect();
     
     // 1. Buscamos la pulsera
-    const pulserasRes = await client.query('SELECT * FROM pulseras WHERE codigo_nfc = $1;', [codigo_nfc]);
+    const pulserasRes = await client.query(
+      'SELECT * FROM pulseras WHERE LOWER(codigo_nfc) = LOWER($1);', 
+      [codigo_nfc.trim()]
+    );
     if (pulserasRes.rows.length === 0) {
       return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
     }
