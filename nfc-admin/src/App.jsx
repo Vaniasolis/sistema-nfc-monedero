@@ -3,8 +3,14 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
+
+    // 🌟 Estado para controlar la pantalla de bienvenida de gala (PÁGALA AQUÍ ARRIBA)
+  const [mostrarBienvenida, setMostrarBienvenida] = useState(true);
+
   // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
-  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
+  //const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
+  const [apiUrlDinamica, setApiUrlDinamica] = useState(import.meta.env.VITE_API_URL || "https://railway.app");
+
 
   // 🧠 2. FUNCIÓN DE CAMBIO DE CANAL (Ahora sí va adentro de App y puede usar setApiUrlDinamica)
   const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
@@ -215,9 +221,156 @@ useEffect(() => {
   }
 
   return (
-  
-       
-    // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
+    
+        mostrarBienvenida ? (
+        <div style={{ 
+          width: '100vw', 
+          height: '100vh', 
+          background: 'linear-gradient(180deg, #090d16 0%, #111827 60%, #030712 100%)', // Fondo Negro Carbón y Azul Noche de lujo
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          padding: '50px 24px', 
+          boxSizing: 'border-box',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 99999, // Se superpone de forma limpia al arrancar
+          fontFamily: "'Segoe UI', Roboto, Helvetica, sans-serif"
+        }}>
+          
+          {/* TOP: Pestaña minimalista */}
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+              padding: '6px 16px', 
+              borderRadius: '20px', 
+              color: '#94a3b8', 
+              fontSize: '9px', 
+              fontWeight: '600', 
+              letterSpacing: '4px',
+              border: '1px solid rgba(128, 125, 143, 0.6)',
+              backdropFilter: 'blur(10px)'
+            }}>
+               EASYCASHLESS • MULTI- EVENTO
+            </div>
+          </div>
+
+          {/* CENTER: Orbe Dorado Champaña y Textos */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', width: '100%', position: 'relative' }}>
+            
+            {/* ✨ El Orbe de Luz Dorada */}
+            <div style={{ 
+              width: '280px', 
+              height: '280px', 
+              borderRadius: '50%', 
+              background: 'radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0) 70%)', 
+              position: 'absolute',
+              top: '-50px',
+              zIndex: 1,
+              filter: 'blur(10px)'
+            }} />
+
+            {/* 👑 ISOTIPO DE MARCA PREMIUM REDISEÑADO (EFECTO CRISTAL Y ORO PULIDO) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '35px', zIndex: 2 }}>
+              <div style={{ 
+                width: '42px', 
+                height: '42px', 
+                borderRadius: '50%', // Círculo perfecto
+                background: 'rgba(255, 255, 255, 0.05)', // Efecto cristal translúcido
+                backdropFilter: 'blur(8px)',
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                // 🌟 Borde metálico de oro pulido
+                border: '2px solid transparent',
+                backgroundImage: 'linear-gradient(#111827, #111827), linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa7c11 100%)',
+                backgroundOrigin: 'border-box',
+                backgroundClip: 'padding-box, border-box',
+                // 🌟 Sombra con resplandor neón dorado
+                boxShadow: '0 0 20px rgba(212, 175, 55, 0.4), inset 0 0 10px rgba(212, 175, 55, 0.2)',
+                position: 'relative'
+              }}>
+                {/* Letra 'E' fina y elegante en color oro champaña */}
+                <span style={{ 
+                  fontWeight: '300', 
+                  fontSize: '22px', 
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f3e5ab 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontFamily: "system-ui, sans-serif"
+                }}>E</span>
+              </div>
+              
+              {/* Texto de la marca con tipografía estilizada y mayor espacio entre letras */}
+              <span style={{ 
+                color: '#ffffff', 
+                fontWeight: '400', 
+                fontSize: '16px', 
+                letterSpacing: '5px',
+                fontFamily: "system-ui, sans-serif",
+                background: 'linear-gradient(90deg, #ffffff 0%, #94a3b8 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                EASYCASHLESS
+              </span>
+            </div>
+
+            {/* Título de Alto Impacto */}
+            <h1 style={{ color: '#ffffff', fontSize: '45px', fontWeight: '300', margin: '0 0 16px 0', lineHeight: '1.25', zIndex: 2, letterSpacing: '-0.5px' }}>
+              BIENVENIDO<br />
+              <span style={{ fontWeight: '700', background: 'linear-gradient(90deg, #ffffff 0%, #f3e5ab 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                
+              </span>
+            </h1>
+
+            {/* Resumen guía */}
+            <p style={{ color: '#94a3b8', 
+              fontSize: '15px', // Bajamos a 15px para que respire mejor en pantallas móviles
+              margin: '15px auto 0 auto', // Agrega espacio arriba y centra la caja horizontalmente
+              maxWidth: '280px', 
+              lineHeight: '1.6', 
+              fontFamily: "system-ui, Roboto, sans-serif", // Quitamos la coma rota
+              zIndex: 2, 
+              fontWeight: '400', // Un grosor más fino (400) evita el empastamiento visual
+              textAlign: 'center', // 🌟 CENTRA EL TEXTO DE FORMA ABSOLUTA
+              width: '100%'}}>
+             Gestiona saldos, accesos y consumos en barras de forma inmediata
+            </p>
+          </div>
+
+          {/* BOTTOM: Botón Ovalado de Acción */}
+          <button 
+            type="button"
+            onClick={() => setMostrarBienvenida(false)} // Oculta esta pantalla web y abre tu app
+            style={{ 
+              width: '100%', 
+              maxWidth: '290px', 
+              padding: '16px 0', 
+              borderRadius: '30px', 
+              border: 'none', 
+              background: 'linear-gradient(90deg, #72736c 0%, #f8fafc 100%)', 
+              color: '#0f172a', 
+              fontWeight: '700', 
+              fontSize: '19px', 
+              cursor: 'pointer', 
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.4)',
+              letterSpacing: '2px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            COMENZAR ➔
+          </button>
+
+        </div>
+      ):      
+
+      // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
     <div style={{ padding: '15px', paddingTop: '35px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
       
       {/* 🎛️ SELECTOR DE CANAL INTELIGENTE MULTI-EVENTO CORREGIDO CON TUS ENLACES REALES */}
@@ -288,7 +441,9 @@ useEffect(() => {
                 {pulseras.map((p) => (
                   <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
                     <td style={{ fontWeight: '500', padding: '10px 4px', wordBreak: 'break-all', fontSize: '12px' }}>{p.codigo_nfc}</td>
-                    <td style={{ padding: '10px 4px', fontSize: '12px' }}>{obtenerTextoAcceso(p.tipo_acceso_id)}</td>
+                     <td style={{ padding: '10px 4px', fontSize: '12px', color: '#17a2b8', fontWeight: 'bold' }}>
+            {p.tipo_acceso || p.acceso || 'General'}
+          </td>
                     <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px' }}>${p.saldo}</td>
                     
                     {/* Columna Caja: Botón de Recargar de tu foto */}
@@ -413,7 +568,7 @@ useEffect(() => {
                       alert('ℹ️ Esta pulsera no tiene ninguna compra registrada en este evento.');
                       return;
                     }
-
+                    
                     // Guardamos las compras y abrimos la hermosa ventana modal emergente
                     setHistorialVentas(res.data);
                     setPulseraSeleccionadaHistorial(codigoPulsera.trim());
@@ -489,10 +644,25 @@ useEffect(() => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontWeight: 'bold', color: '#495057' }}>Tipo de Acceso:</label>
-                <select value={tipoAccesoId} onChange={(e) => setTipoAccesoId(e.target.value)} required style={{ padding: '12px', borderRadius: '6px', border: '1px solid #ced4da', backgroundColor: 'white', fontSize: '16px' }}>
-                  <option value="">-- Seleccione un acceso --</option>
-                  <option value="1">General</option><option value="2">VIP</option><option value="3">Cover</option><option value="4">Backstage</option><option value="5">Cortesia</option>
-                </select>
+                {/* ✅ VERSIÓN REPARADA, ESTABLE Y COMPATIBLE CON TU CÓDIGO */}
+                <select 
+          value={typeof tipoAccesoId !== 'undefined' ? tipoAccesoId : (typeof tipo_acceso_id !== 'undefined' ? tipo_acceso_id : '')} 
+          onChange={(e) => {
+            if (typeof setTipoAcceso === 'function') {
+              setTipoAcceso(e.target.value);
+            } else if (typeof setTipoAccesoId === 'function') {
+              setTipoAccesoId(e.target.value);
+            }
+          }}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#fff', color: '#334155', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 'bold', display: 'block', marginTop: '5px' }}
+        >
+          <option value="">-- Seleccione un acceso --</option>
+          <option value="General">General</option>
+          <option value="VIP">VIP</option>
+          <option value="Cover">Cover</option>
+          <option value="Backstage">Backstage</option>
+          <option value="Cortesia">Cortesia</option>
+        </select>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontWeight: 'bold', color: '#495057' }}>Saldo Inicial ($):</label>
