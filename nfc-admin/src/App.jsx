@@ -3,34 +3,25 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 
 function App() {
-  // 📡 ANTENAS DE INTERNET DINÁMICAS: Arranca sintonizado por defecto en tu Evento
-const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
+  // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
+  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
 
-  // 🧠 FUNCIÓN DE CAMBIO DE CANAL BLINDADA CON CLAVE ADMINISTRATIVA (NUEVA CONTRACERRADURA)
+  // 🧠 2. FUNCIÓN DE CAMBIO DE CANAL (Ahora sí va adentro de App y puede usar setApiUrlDinamica)
   const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
-    // 🔐 Pedimos la clave secreta al operador
     const claveIntroducida = prompt('🔒 Introduzca el código maestro de administrador para cambiar de evento:');
     
-    // 🌟 CLAVE MAESTRA DEFINIDA: Clave secreta de seguridad
-    if (claveIntroducida === 'admin123') {
+    if (claveIntroducida === '123') {
       setApiUrlDinamica(nuevoEnlace);
       alert('✅ Código correcto. Sintonizando nuevo canal de evento en la nube...');
-      
-      setTimeout(() => {
-        if (typeof cargarPulseras === 'function') cargarPulseras();
-        if (typeof cargarProductos === 'function') cargarProductos();
-      }, 300);
     } else {
-      alert('❌ Código incorrecto. Acceso denegado para cambiar el evento.');
-      
-      // 🔄 TRUCO DE ORO: Regresamos el menú visual a la URL que ya estaba activa
+      alert('❌ Código incorrecto. Acceso denegado.');
       if (elementoSelect) {
         elementoSelect.value = apiUrlDinamica;
       }
     }
   };
 
-  // ... Aquí continúan tus demás funciones como cargarPulseras, procesarVenta, etc. ...
+  // 📱 3. TUS ESTADOS (El bloque que me mostraste antes empieza justo aquí)
   const [pestañaActiva, setPestañaActiva] = useState('pulseras');
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
@@ -50,23 +41,24 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
   const [precioProducto, setPrecioProducto] = useState('');
   const [stockProducto, setStockProducto] = useState('');
 
-    // 🌟 NUEVOS ESTADOS PARA LA VENTANA DE HISTORIAL Y REVERSIÓN QUIRÚRGICA
+  // 🌟 NUEVOS ESTADOS PARA LA VENTANA DE HISTORIAL Y REVERSIÓN QUIRÚRGICA
   const [mostrarModalHistorial, setMostrarModalHistorial] = useState(false);
   const [historialVentas, setHistorialVentas] = useState([]);
   const [pulseraSeleccionadaHistorial, setPulseraSeleccionadaHistorial] = useState('');
 
-
-    // 📱 CONFIGURACIÓN DE ARRANQUE: CARGA DATOS Y SE ADUEÑA DE LA ANTENA NFC DEL CELULAR
-    // 📱 CONFIGURACIÓN DE ARRANQUE LIMPIA Y ESTABLE
-  useEffect(() => {
-    cargarPulseras();
-    cargarProductos();
-  }, []); // Arranca rápido y no toca la antena por código nativo
-
+  
+    // 📱 CONFIGURACIÓN DE ARRANQUE Y DETECTOR DE CAMBIO DE EVENTO
+useEffect(() => {
+  // 1. Limpiamos las tablas inmediatamente para que no se queden congeladas
+  setPulseras([]);
+  setProductos([]);
+  // 2. Traemos los datos del servidor que se acaba de seleccionar
+  cargarPulseras();
+  cargarProductos();
+}, [apiUrlDinamica]); 
     // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
   const cargarPulseras = async () => {
     try { 
-      // Le pedimos la lista a tu servidor en internet de forma limpia
       const res = await axios.get(`${apiUrlDinamica}/pulseras`); 
       setPulseras(res.data); 
     } catch (e) { 
@@ -74,14 +66,20 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
     }
   };
 
-  // 🍺 FUNCIÓN CORRECTA PARA LEER LAS BEBIDAS DESDE RAILWAY
-  const cargarProductos = async () => {
-    try { 
-      // Le pedimos el menú a tu servidor en internet
-      const res = await axios.get(`${apiUrlDinamica}/productos`); 
-      setProductos(res.data); 
-    } catch (e) { 
-      console.error("Error al cargar productos desde la nube:", e); 
+  // 🍺 FUNCIÓN DE CARGA DE BEBIDAS DINÁMICA ULTRA-BLINDADA PARA AMBOS EVENTOS
+   const cargarProductos = async () => {
+    try {
+      const res = await axios.get(`${apiUrlDinamica}/productos`);
+      setProductos(res.data);
+      
+      if (res.data.length > 0) {
+        // 🌟 REVISA ESTA LÍNEA: Debe tener el [0] después de res.data
+        setProductoSeleccionado(res.data[0].id.toString()); 
+      } else {
+        setProductoSeleccionado('');
+      }
+    } catch (err) {
+      console.error("Error al cargar catálogo de bebidas:", err);
     }
   };
 
@@ -214,10 +212,11 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
     if (id === 4) return 'Backstage'; 
     if (id === 5) return 'coCortesia'; 
     return 'Otro';
-  };
+  }
 
   return (
-        // 🌟 REGLA DE ORO DE DISEÑO: Forzamos flex y minHeight para que el pie de página se vaya al fondo real del celular
+  
+       
     // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
     <div style={{ padding: '15px', paddingTop: '35px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
       
@@ -404,9 +403,11 @@ const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monede
                   const codigoPulsera = prompt('Por favor, ingresa o escanea el código de la pulsera para ver su historial de compras:');
                   if (!codigoPulsera || !codigoPulsera.trim()) return;
 
+                  const uidLimpio = codigoPulsera.trim().toUpperCase();
+
                   try {
-                    // 📡 Consultamos la nueva ruta que lee el historial del cliente
-                    const res = await axios.get(`${apiUrlDinamica}/ventas/historial/${codigoPulsera.trim()}`);
+                    // Consultamos el historial al servidor dinámico activo (Canal 1 o Canal 2)
+                    const res = await axios.get(`${apiUrlDinamica}/ventas/historial/${uidLimpio}`);
                     
                     if (res.data.length === 0) {
                       alert('ℹ️ Esta pulsera no tiene ninguna compra registrada en este evento.');
