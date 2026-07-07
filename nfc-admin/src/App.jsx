@@ -8,10 +8,8 @@ function App() {
   const [mostrarBienvenida, setMostrarBienvenida] = useState(true);
 
   // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
-  //const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
-  const [apiUrlDinamica, setApiUrlDinamica] = useState(import.meta.env.VITE_API_URL || "https://railway.app");
-
-
+  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
+   
   // 🧠 2. FUNCIÓN DE CAMBIO DE CANAL (Ahora sí va adentro de App y puede usar setApiUrlDinamica)
   const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
     const claveIntroducida = prompt('🔒 Introduzca el código maestro de administrador para cambiar de evento:');
