@@ -202,6 +202,82 @@ app.post('/ventas', async (req, res) => {
   }
 });
 
+// 🛒 ENDPOINT ADAPTADO PARA COBROS MÚLTIPLES (CARRITO DE COMPRAS EASYCASHLESS)
+app.post('/ventas/multiple', async (req, res) => {
+  const { codigo_nfc, items } = req.body;
+
+  if (!codigo_nfc || !items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Datos del carrito incompletos.' });
+  }
+
+  const client = new Client(process.env.DATABASE_URL);
+
+  try {
+    await client.connect();
+
+    // 1. Buscamos la pulsera usando tu misma regla inteligente en minúsculas
+    const pulserasRes = await client.query(
+      'SELECT * FROM pulseras WHERE LOWER(codigo_nfc) = LOWER($1);', 
+      [codigo_nfc.trim()]
+    );
+    if (pulserasRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Pulsera no registrada en el evento' });
+    }
+    const pulsera = pulserasRes.rows[0];
+
+    // 2. Calculamos el total de toda la orden y validamos stock de cada bebida
+    let totalCarrito = 0;
+    const productosValidados = [];
+
+    for (const item of items) {
+      const prodRes = await client.query('SELECT * FROM productos WHERE id = $1;', [parseInt(item.producto_id)]);
+      if (prodRes.rows.length === 0) {
+        return res.status(404).json({ error: `El producto con ID ${item.producto_id} no existe.` });
+      }
+      
+      const prod = prodRes.rows[0];
+      if (prod.stock <= 0) {
+        return res.status(400).json({ error: `El artículo "${prod.nombre}" se ha agotado en barra.` });
+      }
+
+      totalCarrito += parseFloat(prod.precio);
+      productosValidados.push(prod);
+    }
+
+    // 3. Validamos si el saldo actual de la pulsera alcanza para pagar todo el carrito
+    if (parseFloat(pulsera.saldo) < totalCarrito) {
+      return res.status(400).json({ error: `Saldo insuficiente en pulsera. Total orden: $${totalCarrito.toFixed(2)}, Saldo: $${parseFloat(pulsera.saldo).toFixed(2)}` });
+    }
+
+    // 4. 🪐 INICIAMOS TRANSACCIÓN SQL CRÍTICA PARA GUARDAR TODO O NADA
+    await client.query('BEGIN');
+
+    // A) Descontamos el saldo total acumulado de la pulsera del cliente
+    await client.query('UPDATE pulseras SET saldo = saldo - $1 WHERE codigo_nfc = $2;', [totalCarrito, codigo_nfc]);
+
+    // B) Procesamos cada bebida restando su stock e inyectando la venta individual a tu bitácora
+    for (const prod of productosValidados) {
+      await client.query('UPDATE productos SET stock = stock - 1 WHERE id = $1;', [prod.id]);
+      await client.query('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2);', [codigo_nfc, prod.precio]);
+    }
+
+    // Consolidamos los datos en tu nube de Neon SQL de forma permanente
+    await client.query('COMMIT');
+
+    return res.json({ mensaje: `🎉 ¡Cobro masivo de $${totalCarrito.toFixed(2)} por las ${items.length} bebidas completado con éxito!` });
+
+  } catch (err) {
+    await client.query('ROLLBACK'); // Si algo falla en el camino, deshacemos todo para cuidar el dinero
+    console.error("❌ ERROR EN PROCESAR VENTA MÚLTIPLE:", err.message);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Error al procesar la venta masiva en la nube' });
+    }
+  } finally {
+    await client.end();
+  }
+});
+
+
 // ↩️ RUTA DE REVERSIÓN POR ID DE COMPRA EXACTO
 app.post('/ventas/revertir', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
