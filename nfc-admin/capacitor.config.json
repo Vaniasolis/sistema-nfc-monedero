@@ -1,5 +1,9 @@
 {
   "appId": "com.cashlessJV.nfcapp",
-  "appName": "Cashless VJ",
-  "webDir": "dist"
+  "appName": "EASYCASHLESS",
+  "webDir": "dist",
+  "server": {
+    "url": "https://nfc-admin-theta.vercel.app",
+    "cleartext": true
+  }
 }

@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Cashless VJ</string>
-    <string name="title_activity_main">Cashless VJ</string>
+    <string name="app_name">EASYCASHLESS</string>
+    <string name="title_activity_main">EASYCASHLESS</string>
     <string name="package_name">com.cashlessJV.nfcapp</string>
     <string name="custom_url_scheme">com.cashlessJV.nfcapp</string>
+
+    <!-- 🚀 LLAVE DE CONEXIÓN INALÁMBRICA PARA CAPACITOR -->
+    <string name="server_url">https://vercel.app</string>
 </resources>
