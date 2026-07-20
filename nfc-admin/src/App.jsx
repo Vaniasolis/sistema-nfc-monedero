@@ -349,23 +349,21 @@ function App() {
       
       alert(res.data.mensaje || `🎉 ¡Cobro de $${costoTotalCarrito.toFixed(2)} completado con éxito!`);
       
-      // 🚀 SUPER-BORRADOR MASIVO MULTIVARIABLE (JAQUE MATE AL CONGELAMIENTO)
-            // 🚀 JAQUE MATE AL CONGELAMIENTO: Vaciado simultáneo obligatorio
       if (typeof setCarritoVenta === 'function') setCarritoVenta([]);
       if (typeof setCarrito === 'function') setCarrito([]);
-      
-      // Vaciamos AMBAS al mismo milisegundo para desactivar el operador || de tu input
       if (typeof setCodigoNfc === 'function') setCodigoNfc('');
       if (typeof setPulseraVenta === 'function') setPulseraVenta('');
-      
-      // Forzamos al hardware de la pantalla a reventar cualquier texto usando tu placeholder real
-      const inputFisicoNfc = document.querySelector('input[placeholder="Acerque la pulsera NFC aquí..."]');
-      if (inputFisicoNfc) {
-        inputFisicoNfc.value = '';
-        inputFisicoNfc.dispatchEvent(new Event('input', { bubbles: true }));
-      }
 
-      
+      // 🧹 LIMPIEZA INYECTADA DE HARDWARE (JAQUE MATE AL ID CONGELADO)
+      // Buscamos absolutamente TODOS los inputs de texto de la pantalla y los vaciamos de golpe
+      const todosLosInputs = document.querySelectorAll('input[type="text"]');
+      todosLosInputs.forEach(input => {
+        if (input) {
+          input.value = ''; // Tritura el texto en pantalla (borra el 04:A3:1E...)
+          input.dispatchEvent(new Event('input', { bubbles: true })); // Le avisa a React que ya no hay nada
+        }
+      });
+
       // Si tu input está metido en un formulario clásico de HTML, lo reseteamos de raíz:
       const formulario = document.querySelector('form');
       if (formulario) formulario.reset();
