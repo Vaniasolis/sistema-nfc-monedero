@@ -433,8 +433,5 @@ app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
   }
 });
 
-// El puerto dinámico comercial de Railway (SIEMPRE AL FINAL)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Servidor nativo corriendo con éxito en el puerto ${PORT}`);
-});
+// 🚀 Exportación oficial para que Vercel ejecute tu servidor gratis
+module.exports = app;
