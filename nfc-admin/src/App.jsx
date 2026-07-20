@@ -17,7 +17,7 @@ function App() {
   const CONTRASEÑA_ACCESO_SISTEMA = "admin29"; 
 
   // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
-  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://vercel.app");
+  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://nfc-admin-theta.vercel.app");
 
   // 🛒 ESTADO PARA EL CARRITO DE COMPRAS EN BARRA
   const [carritoVenta, setCarritoVenta] = useState([]);
@@ -347,30 +347,23 @@ function App() {
         items: carritoVenta.map(item => ({ producto_id: item.producto_id, precio: item.precio }))
       });
       
-      alert(res.data.mensaje || `🎉 ¡Cobro de $${costoTotalCarrito.toFixed(2)} completado con éxito!`);
+            alert(res.data.mensaje || `🎉 ¡Cobro de $${costoTotalCarrito.toFixed(2)} completado con éxito!`);
       
+      // 🚀 RESETEO DE HARDWARE CONTROLADO (CORTA EL BLOQUEO DE LA ANTENA NFC)
       if (typeof setCarritoVenta === 'function') setCarritoVenta([]);
       if (typeof setCarrito === 'function') setCarrito([]);
       if (typeof setCodigoNfc === 'function') setCodigoNfc('');
       if (typeof setPulseraVenta === 'function') setPulseraVenta('');
 
-      // 🧹 LIMPIEZA INYECTADA DE HARDWARE (JAQUE MATE AL ID CONGELADO)
-      // Buscamos absolutamente TODOS los inputs de texto de la pantalla y los vaciamos de golpe
-      const todosLosInputs = document.querySelectorAll('input[type="text"]');
-      todosLosInputs.forEach(input => {
-        if (input) {
-          input.value = ''; // Tritura el texto en pantalla (borra el 04:A3:1E...)
-          input.dispatchEvent(new Event('input', { bubbles: true })); // Le avisa a React que ya no hay nada
-        }
-      });
+      // Sincronizamos las tablas justo antes del parpadeo visual
+      if (typeof cargarPulseras === 'function') cargarPulseras();
+      if (typeof cargarProductos === 'function') cargarProductos();
 
-      // Si tu input está metido en un formulario clásico de HTML, lo reseteamos de raíz:
-      const formulario = document.querySelector('form');
-      if (formulario) formulario.reset();
+      // 🧹 Forzamos a la pestaña del celular a limpiar su memoria de hardware al instante
+      setTimeout(() => {
+        window.location.reload(); 
+      }, 150);
 
-
-      cargarPulseras();
-      cargarProductos();
     } catch (err) {
       alert(err.response?.data?.error || 'Error al procesar el cobro múltiple en la nube.');
     }
