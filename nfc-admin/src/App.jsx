@@ -349,13 +349,27 @@ function App() {
       
       alert(res.data.mensaje || `🎉 ¡Cobro de $${costoTotalCarrito.toFixed(2)} completado con éxito!`);
       
-      // Vaciamos la barra y el carrito para la siguiente transacción
-      setCarritoVenta([]);
-      setPulseraVenta('');
+            // 🚀 SUPER-BORRADOR MASIVO MULTIVARIABLE (JAQUE MATE AL CONGELAMIENTO)
+      if (typeof setCarritoVenta !== 'undefined') setCarritoVenta([]);
+      if (typeof setCarrito !== 'undefined') setCarrito([]);
+      
+      // Barre en caliente todas las variables de ID posibles de tu sistema:
+      if (typeof setPulseraVenta !== 'undefined') setPulseraVenta('');
+      if (typeof setCodigoNfc !== 'undefined') setCodigoNfc('');
+      if (typeof setUid !== 'undefined') setUid(''); 
+      if (typeof setNfcId !== 'undefined') setNfcId(''); 
+      if (typeof setPulseraSeleccionada !== 'undefined') setPulseraSeleccionada('');
+      
+      // Borrado físico directo sobre el hardware de la pantalla
       if (inputFisico) {
         inputFisico.value = ''; 
         inputFisico.dispatchEvent(new Event('input', { bubbles: true }));
       }
+      
+      // Si tu input está metido en un formulario clásico de HTML, lo reseteamos de raíz:
+      const formulario = document.querySelector('form');
+      if (formulario) formulario.reset();
+
 
       cargarPulseras();
       cargarProductos();
