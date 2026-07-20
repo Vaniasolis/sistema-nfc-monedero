@@ -98,66 +98,29 @@ function App() {
 
     // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
   const cargarPulseras = async () => {
-    try { 
-      // 1. SALVAVIDAS: Si apiUrlDinamica se duerme un milisegundo, usa tu enlace oficial de Railway
-      const enlaceReal = apiUrlDinamica || "https://railway.app";
-
-      // 2. DESTRUCTOR DE CACHÉ: Le agregamos un timestamp (?_nocache=...) para obligar al celular a traer los datos nuevos
-      const res = await axios.get(`${enlaceReal}/pulseras?_nocache=${new Date().getTime()}`); 
-      
-      // 3. Estampamos los datos frescos en tu tabla turquesa
-      if (res.data && Array.isArray(res.data)) {
-        const mapaSaldosUnificados = {};
-
-        // Jalamos el espejo permanente de devoluciones del disco físico del Samsung S25
-        let saldosPermanentesDisco = {};
-        try {
-          saldosPermanentesDisco = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
-        } catch (e) {}
-
-        res.data.forEach(pulsera => {
-          const codigoLimpio = (pulsera.codigo_nfc || pulsera.codigo || '').replace('C-', '').trim().toUpperCase();
-          
-          if (codigoLimpio && codigoLimpio !== "") {
-            if (!mapaSaldosUnificados[codigoLimpio]) {
-              mapaSaldosUnificados[codigoLimpio] = { ...pulsera, codigo_nfc: codigoLimpio, saldo: 0 };
-            }
-            mapaSaldosUnificados[codigoLimpio].saldo += parseFloat(pulsera.saldo || 0);
-          }
-        });
-
-        // 🌟 EL TOQUE MAESTRO INDESTRUCTIBLE: 
-        // Recorremos la lista y le inyectamos de forma obligatoria los saldos respaldados en el disco duro del teléfono
-        Object.keys(mapaSaldosUnificados).forEach(codigo => {
-          if (saldosPermanentesDisco[codigo]) {
-            mapaSaldosUnificados[codigo].saldo += parseFloat(saldosPermanentesDisco[codigo]);
-          }
-        });
-
-        setPulseras(Object.values(mapaSaldosUnificados));
-        console.log("MÓDULO PERSISTENCIA: Saldos unificados con disco local duro de forma exitosa.");
-      } else {
+    try {
+      // 🚀 ELIMINAMOS EL SALVAVIDAS FANTASMA: Va directo a tu subdominio de Vercel
+      const res = await axios.get(`${apiUrlDinamica}/pulseras?_nocache=${new Date().getTime()}`);
+      if (Array.isArray(res.data)) {
         setPulseras(res.data);
+        console.log("📡 MÓDULO SINCRO: Pulseras descargadas con éxito desde Vercel gratis.");
       }
-    } catch (e) { 
-      console.error("Error al cargar pulseras desde la nube:", e); 
+    } catch (err) {
+      console.error("❌ Error al cargar pulseras desde la nube:", err);
     }
   };
 
   // 🍺 FUNCIÓN DE CARGA DE BEBIDAS DINÁMICA ULTRA-BLINDADA PARA AMBOS EVENTOS
    const cargarProductos = async () => {
     try {
+      // 🚀 ELIMINAMOS EL SALVAVIDAS FANTASMA: Va directo a tu subdominio de Vercel
       const res = await axios.get(`${apiUrlDinamica}/productos`);
-      setProductos(res.data);
-      
-      if (res.data.length > 0) {
-        // 🌟 REVISA ESTA LÍNEA: Debe tener el [0] después de res.data
-        setProductoSeleccionado(res.data[0].id.toString()); 
-      } else {
-        setProductoSeleccionado('');
+      if (Array.isArray(res.data)) {
+        setProductos(res.data);
+        console.log("📡 MÓDULO SINCRO: Catálogo de bebidas descargado con éxito desde Vercel gratis.");
       }
     } catch (err) {
-      console.error("Error al cargar catálogo de bebidas:", err);
+      console.error("❌ Error al cargar catálogo de bebidas:", err);
     }
   };
 
