@@ -349,22 +349,22 @@ function App() {
       
       alert(res.data.mensaje || `🎉 ¡Cobro de $${costoTotalCarrito.toFixed(2)} completado con éxito!`);
       
-            // 🚀 SUPER-BORRADOR MASIVO MULTIVARIABLE (JAQUE MATE AL CONGELAMIENTO)
-      if (typeof setCarritoVenta !== 'undefined') setCarritoVenta([]);
-      if (typeof setCarrito !== 'undefined') setCarrito([]);
+      // 🚀 SUPER-BORRADOR MASIVO MULTIVARIABLE (JAQUE MATE AL CONGELAMIENTO)
+            // 🚀 JAQUE MATE AL CONGELAMIENTO: Vaciado simultáneo obligatorio
+      if (typeof setCarritoVenta === 'function') setCarritoVenta([]);
+      if (typeof setCarrito === 'function') setCarrito([]);
       
-      // Barre en caliente todas las variables de ID posibles de tu sistema:
-      if (typeof setPulseraVenta !== 'undefined') setPulseraVenta('');
-      if (typeof setCodigoNfc !== 'undefined') setCodigoNfc('');
-      if (typeof setUid !== 'undefined') setUid(''); 
-      if (typeof setNfcId !== 'undefined') setNfcId(''); 
-      if (typeof setPulseraSeleccionada !== 'undefined') setPulseraSeleccionada('');
+      // Vaciamos AMBAS al mismo milisegundo para desactivar el operador || de tu input
+      if (typeof setCodigoNfc === 'function') setCodigoNfc('');
+      if (typeof setPulseraVenta === 'function') setPulseraVenta('');
       
-      // Borrado físico directo sobre el hardware de la pantalla
-      if (inputFisico) {
-        inputFisico.value = ''; 
-        inputFisico.dispatchEvent(new Event('input', { bubbles: true }));
+      // Forzamos al hardware de la pantalla a reventar cualquier texto usando tu placeholder real
+      const inputFisicoNfc = document.querySelector('input[placeholder="Acerque la pulsera NFC aquí..."]');
+      if (inputFisicoNfc) {
+        inputFisicoNfc.value = '';
+        inputFisicoNfc.dispatchEvent(new Event('input', { bubbles: true }));
       }
+
       
       // Si tu input está metido en un formulario clásico de HTML, lo reseteamos de raíz:
       const formulario = document.querySelector('form');
