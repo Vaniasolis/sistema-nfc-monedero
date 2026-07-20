@@ -568,11 +568,11 @@ function App() {
           onChange={(e) => cambiarCanalEvento(e.target.value, e.target)}
           style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
         >
-          {/* 🌟 Canal 1: Tu primer servidor real de toda la vida */}
-          <option value="https://sistema-nfc-monedero-production.up.railway.app">🎟️ Evento 1 (Principal)</option>
+          {/* 🌟 Canal 1: Tu nuevo servidor unificado y gratuito en Vercel */}
+          <option value="https://vercel.app">🎟️ Evento 1 (Vercel Gratis)</option>
           
-          {/* 🌟 Canal 2: Tu segundo servidor duplicado con la palabra copy-1 */}
-          <option value="https://sistema-nfc-monedero-copy-1-production.up.railway.app">🎵 Evento 2 (Copia)</option>
+          {/* 🌟 Canal 2: Respaldo en Vercel por si lo necesitas a futuro */}
+          <option value="https://vercel.app">🎵 Evento 2 (Vercel Respaldo)</option>
         </select>
       </div>
       
