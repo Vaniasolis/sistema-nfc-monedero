@@ -51,10 +51,15 @@ app.post('/pulseras', async (req, res) => {
     return res.status(400).json({ error: "El código NFC es obligatorio" });
   }
   try {
-    // 🌟 Cambiamos la palabra 'acceso' por 'tipo_acceso' para que coincida con tu tabla de Neon
+    // 🌟 Traducimos el texto que viene del formulario a los IDs numéricos de tu foto (4, 3, 2)
+    let idNumericoAcceso = 4; // Por defecto asignamos el ID 4 (General/Cover)
+    if (tipo_acceso === 'VIP') idNumericoAcceso = 3;
+    if (tipo_acceso === 'Staff') idNumericoAcceso = 2;
+
+    // 🚀 Usamos estrictamente tu columna 'tipo_acceso_id' de Neon
     await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, tipo_acceso, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET tipo_acceso = $2, saldo = $3',
-      [codigo_nfc, tipo_acceso || 'Cover', parseFloat(saldo || 0)]
+      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET tipo_acceso_id = $2, saldo = $3',
+      [codigo_nfc, idNumericoAcceso, parseFloat(saldo || 0)]
     );
     res.json({ exito: true, mensaje: "🎉 ¡Pulsera registrada con éxito en Railway!" });
   } catch (err) {
