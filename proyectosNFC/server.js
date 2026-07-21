@@ -2,7 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const { Pool } = require('pg');
-app.use(cors());
+app.use(cors({
+  origin: '*', // Permite que tu frontend de Vercel acceda sin restricciones
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 
 // 🔌 AGREGA ESTAS LÍNEAS AQUÍ ABAJO PARA REPARAR LOS DOS ERRORES:
