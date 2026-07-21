@@ -230,18 +230,6 @@ app.post('/ventas/multiple', async (req, res) => {
 });
 
 // 📦 RUTA SOPORTE: Obtener el historial de ventas usando las columnas reales de tu Neon
-app.get('/ventas/multiple', async (req, res) => {
-  try {
-    // 🚀 Corregido: Ordenamos por 'id' que sí existe en tu JSON
-    const resultado = await pool.query('SELECT * FROM ventas ORDER BY id DESC LIMIT 50');
-    res.json(resultado.rows);
-  } catch (err) {
-    console.error("❌ Error al consultar GET ventas múltiples:", err.message);
-    res.json([]); // Si truena por alguna columna, regresa arreglo vacío seguro para que no se congele el front
-  }
-});
-
-// 🚀 RUTA POST: Procesar el cobro múltiple con las columnas reales de tu Neon
 app.post('/ventas/multiple', async (req, res) => {
   const { codigo_nfc, items } = req.body;
   if (!codigo_nfc || !items || items.length === 0) {
@@ -249,7 +237,7 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // 1. 🔍 BUSQUEDA REAL: En la tabla pulseras buscamos por la columna 'codigo_nfc'
+    // 1. Buscamos en la tabla pulseras por la columna 'codigo_nfc'
     const pulserasEncontradas = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
     if (pulserasEncontradas.rows.length === 0) {
       return res.status(404).json({ error: "La pulsera no existe en el sistema" });
@@ -268,13 +256,13 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 2. 💰 ACTUALIZACIÓN REAL: Restamos el saldo usando la columna 'codigo_nfc'
+    // 2. Restamos el dinero del saldo usando la columna 'codigo_nfc'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 3. 📝 INSERCIÓN REAL EN VENTAS: Extraemos el primer producto_id del carrito para guardarlo
+    // 3. 🚀 CORRECCIÓN CRÍTICA DE INDICE: Extraemos correctamente el primer producto del arreglo
     const primerProductoId = items[0]?.producto_id || null;
 
-    // Usamos las columnas exactas de tu JSON: 'pulsera_id', 'total' y 'producto_id'
+    // Insertamos en las columnas reales de tu JSON de Neon: 'pulsera_id', 'total' y 'producto_id'
     await pool.query(
       'INSERT INTO ventas (pulsera_id, total, producto_id) VALUES ($1, $2, $3)', 
       [codigo_nfc, costoTotal, primerProductoId]
@@ -284,7 +272,7 @@ app.post('/ventas/multiple', async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error real en venta múltiple:", err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });
 
