@@ -2,6 +2,14 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/productos",
+      "destination": "https://railway.app"
+    },
+    {
+      "source": "/pulseras",
+      "destination": "https://railway.app"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
