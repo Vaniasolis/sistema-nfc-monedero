@@ -32,10 +32,11 @@ app.use((req, res, next) => {
 // 📦 2. RUTA: OBTENER TODAS LAS PULSERAS (MONEDEROS CASHLESS)
 app.get('/pulseras', async (req, res) => {
   try {
-  const resultado = await pool.query('SELECT * FROM pulseras ORDER BY código_nfc ASC');
-  res.json(resultado.rows); // 🚀 Regresa al formato clásico de Railway
+    // Usamos "código_nfc" con comillas dobles tal como vimos en tu Neon Cloud
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY "código_nfc" ASC');
+    res.json(resultado.rows);
   } catch (err) {
-    console.error("Error en pulseras:", err);
+    console.error("❌ Error en pulseras:", err.message);
     res.status(500).json({ error: "Fallo en el servidor al leer pulseras" });
   }
 });
@@ -43,19 +44,15 @@ app.get('/pulseras', async (req, res) => {
 app.post('/pulseras', async (req, res) => {
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
-    
-    // 🚀 Usamos 'pool.query' directamente e insertamos usando comillas dobles en "código_nfc"
     await pool.query(
       'INSERT INTO pulseras ("código_nfc", tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
-      [codigo_nfc, parseInt(tipo_acceso_id), parseFloat(saldo)]
+      [codigo_nfc, parseInt(tipo_acceso_id) || 1, parseFloat(saldo) || 0]
     );
-    
     res.json({ guardado: true });
   } catch (err) {
     console.error("❌ ERROR EN POST PULSERAS:", err.message);
     res.status(500).json({ guardado: false, error: err.message });
   }
-  // 🔌 Ya no hace falta el 'finally' porque el pool administra las conexiones de forma automática
 });
 
 app.put('/pulseras/recargar', async (req, res) => {
@@ -76,10 +73,10 @@ app.put('/pulseras/recargar', async (req, res) => {
 // 📦 1. RUTA: OBTENER TODOS LOS PRODUCTOS
 app.get('/productos', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM productos ORDER BY id ASC');
-    res.json(resultado.rows); // 🚀 Regresa al formato clásico de Railway
+    const resultado = await pool.query('SELECT * FROM productos');
+    res.json(resultado.rows);
   } catch (err) {
-    console.error("Error en productos:", err);
+    console.error("❌ Error en productos:", err.message);
     res.status(500).json({ error: "Fallo en el servidor al leer productos" });
   }
 });
@@ -339,8 +336,7 @@ app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor comercial corriendo en el puerto ${PORT}`);
 });
-;
