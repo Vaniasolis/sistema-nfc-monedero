@@ -17,8 +17,7 @@ function App() {
   const CONTRASEÑA_ACCESO_SISTEMA = "admin29"; 
 
   // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
-  //const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
-  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://railway.app"); // 🚀 PROXY FERREO ACTIVADO
+  const [apiUrlDinamica, setApiUrlDinamica] = useState("https://railway.app");
 
   // 🛒 ESTADO PARA EL CARRITO DE COMPRAS EN BARRA
   const [carritoVenta, setCarritoVenta] = useState([]);

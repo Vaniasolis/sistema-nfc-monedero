@@ -2,11 +2,11 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/productos",
+      "source": "/productos(.*)",
       "destination": "https://railway.app"
     },
     {
-      "source": "/pulseras",
+      "source": "/pulseras(.*)",
       "destination": "https://railway.app"
     },
     {
