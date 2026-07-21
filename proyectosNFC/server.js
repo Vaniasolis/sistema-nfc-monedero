@@ -249,13 +249,12 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // 1. Buscamos en pulseras usando el nombre de columna correcto 'codigo_nfc'
+    // 1. 🔍 BUSQUEDA REAL: En la tabla pulseras buscamos por la columna 'codigo_nfc'
     const pulserasEncontradas = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
     if (pulserasEncontradas.rows.length === 0) {
-      return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
+      return res.status(404).json({ error: "La pulsera no existe en el sistema" });
     }
 
-    // 🚀 CORRECCIÓN CRÍTICA: extraemos correctamente el objeto de la fila encontrada
     const pulsera = pulserasEncontradas.rows[0]; 
     let costoTotal = 0;
 
@@ -269,21 +268,23 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 1. Actualizamos el saldo del monedero en la tabla 'pulseras'
+    // 2. 💰 ACTUALIZACIÓN REAL: Restamos el saldo usando la columna 'codigo_nfc'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 2. 🚀 CORRECCIÓN DEFINITIVA DE LA TABLA HISTORIAL:
-    // Cambiamos 'ventas' por 'historial_ventas' para insertar en la tabla real de auditoría
+    // 3. 📝 INSERCIÓN REAL EN VENTAS: Extraemos el primer producto_id del carrito para guardarlo
+    const primerProductoId = items[0]?.producto_id || null;
+
+    // Usamos las columnas exactas de tu JSON: 'pulsera_id', 'total' y 'producto_id'
     await pool.query(
-      'INSERT INTO historial_ventas (pulsera_id, total) VALUES ($1, $2)', 
-      [codigo_nfc, costoTotal]
+      'INSERT INTO ventas (pulsera_id, total, producto_id) VALUES ($1, $2, $3)', 
+      [codigo_nfc, costoTotal, primerProductoId]
     );
 
-    res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
+    res.json({ guardado: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
   } catch (err) {
-    console.error("❌ Error en venta múltiple:", err.message); // El log que leímos
-    res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
+    console.error("❌ Error real en venta múltiple:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
