@@ -6,12 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-const { Pool } = require('pg');
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // <--- Esto lee la URL de Neon de forma segura
-});
-
 // Atendedor de preguntas previas preflight de Chrome
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -227,12 +221,6 @@ app.post('/ventas/multiple', async (req, res) => {
     console.error("Error en venta múltiple:", err);
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
-});
-
-// 🔌 BÚNKER DE ESCUCHA TRADICIONAL DE RAILWAY
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(` Servidor comercial corriendo en el puerto ${PORT}`);
 });
 
 app.get('/reporte-ventas', async (req, res) => {
