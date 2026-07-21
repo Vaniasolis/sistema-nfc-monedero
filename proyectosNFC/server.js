@@ -6,10 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔌 CONEXIÓN MAESTRA A TU BASE DE DATOS NEON EN RAILWAY
+
+const { Pool } = require('pg');
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString: process.env.DATABASE_URL, // <--- Esto lee la URL de Neon de forma segura
 });
 
 // Atendedor de preguntas previas preflight de Chrome
