@@ -229,56 +229,63 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 });
 
-// 📦 RUTA SOPORTE: Evita el error Cannot GET cuando el frontend consulta el endpoint
+// 📦 RUTA SOPORTE: Obtener el historial de ventas usando las columnas reales de tu Neon
 app.get('/ventas/multiple', async (req, res) => {
   try {
-    // Regresa la lista de la bitácora de ventas para que el frontend la pueda listar
+    // 🚀 Corregido: Ordenamos por 'id' que sí existe en tu JSON
     const resultado = await pool.query('SELECT * FROM ventas ORDER BY id DESC LIMIT 50');
     res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error al consultar GET ventas múltiples:", err.message);
-    res.json([]); // Regresa un arreglo vacío seguro para que el frontend no se rompa si la tabla no existe
+    res.json([]); // Si truena por alguna columna, regresa arreglo vacío seguro para que no se congele el front
   }
 });
 
+// 🚀 RUTA POST: Procesar el cobro múltiple con las columnas reales de tu Neon
+app.post('/ventas/multiple', async (req, res) => {
+  const { codigo_nfc, items } = req.body;
+  if (!codigo_nfc || !items || items.length === 0) {
+    return res.status(400).json({ error: "Datos incompletos para procesar la venta masiva" });
+  }
 
-app.get('/reporte-ventas', async (req, res) => {
-  const client = new Client(process.env.DATABASE_URL);
   try {
-    const consulta = `
-      SELECT p.precio AS precio_articulo, COUNT(v.id) AS cantidad_vendida, SUM(v.total) AS total_recaudado
-      FROM ventas v
-      JOIN productos p ON v.total = p.precio
-      GROUP BY p.precio;
-    `;
-    await client.connect();
-    const resultado = await client.query(consulta);
-    res.json(resultado.rows);
+    // 🚀 Corregido: Buscamos en pulseras por 'codigo_nfc' (que ya validamos que se llama así)
+    const pulserasEncontradas = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    if (pulserasEncontradas.rows.length === 0) {
+      return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
+    }
+
+    const pulsera = pulserasEncontradas.rows[0];
+    let costoTotal = 0;
+
+    items.forEach(item => {
+      costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
+    });
+
+    if (parseFloat(pulsera.saldo) < costoTotal) {
+      return res.status(400).json({ error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${parseFloat(pulsera.saldo).toFixed(2)}` });
+    }
+
+    const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
+
+    // Actualizamos el monedero en Railway
+    await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
+
+    // 🚀 CORREGIDO AQUÍ: Cambiamos 'codigo_nfc' por 'pulsera_id' e insertamos 'monto' como 'total'
+    const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+    await pool.query(
+      'INSERT INTO ventas (pulsera_id, descripcion, total) VALUES ($1, $2, $3)', 
+      [codigo_nfc, descripcionVenta, costoTotal]
+    );
+
+    res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  } finally {
-    await client.end();
+    console.error("Error en venta múltiple:", err);
+    res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });
 
-// 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
-app.delete('/pulseras/limpiar', async (req, res) => {
-  const client = new Client(process.env.DATABASE_URL);
-  try {
-    await client.connect();
-    // Borramos primero las ventas para liberar candados relacionales
-    await client.query('DELETE FROM ventas;');
-    // Ahora vaciamos las pulseras de taquilla manteniendo tu catálogo de bebidas intacto
-    await client.query('DELETE FROM pulseras;');
-    return res.json({ mensaje: '🧹 Evento reiniciado con éxito. Registros y ventas vaciados en ceros.' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
-  } finally {
-    await client.end();
-  }
-});
 
 // 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
 app.delete('/pulseras/limpiar', async (req, res) => {
