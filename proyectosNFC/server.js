@@ -31,35 +31,41 @@ app.get('/productos', async (req, res) => {
   }
 });
 
-// 🏷️ 2. RUTA: OBTENER TODAS LAS PULSERAS
+// 🔋 1. RUTA: LISTAR PULSERAS (MÓDULO DE MONEDEROS CASHLESS)
 app.get('/pulseras', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id ASC');
-    res.json(resultado.rows);
+    // 🚀 Sintaxis Senior de Vercel: Eliminamos 'pool.query' y comillas invertidas
+    const datosPulseras = await sql('SELECT * FROM pulseras ORDER BY id ASC');
+    res.json(datosPulseras); // 🌟 Mandamos la lista limpia de golpe (sin .rows)
   } catch (err) {
-    console.error("❌ Error en GET pulseras:", err.message);
+    console.error("❌ Error en GET pulseras Vercel:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 🔋 3. RUTA: RECARGAR SALDO A UNA PULSERA (CORREGIDO SIN COMILLAS)
+// 🔋 2. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO)
 app.put('/pulseras/recargar', async (req, res) => {
   const { codigo_nfc, monto } = req.body;
   if (!codigo_nfc || !monto) {
     return res.status(400).json({ error: "Datos incompletos para la recarga" });
   }
   try {
-    const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
-    if (busqueda.rows.length === 0) {
+    // Consultas seguras por parámetros puros en Vercel
+    const busqueda = await sql('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    
+    if (busqueda.length === 0) {
       return res.status(404).json({ error: "La pulsera no existe" });
     }
-    const pulsera = busqueda.rows[0];
+    
+    const pulsera = busqueda[0]; // Extraemos el primer registro de la lista HTTP
     const nuevoSaldo = parseFloat(pulsera.saldo || 0) + parseFloat(monto);
     
-    await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
+    // Ejecutamos la actualización del monedero en un milisegundo
+    await sql('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
+    
     res.json({ exito: true, mensaje: `🔋 Recarga exitosa. Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
   } catch (err) {
-    console.error("❌ Error en PUT recargar:", err.message);
+    console.error("❌ Error en PUT recargar Vercel:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
