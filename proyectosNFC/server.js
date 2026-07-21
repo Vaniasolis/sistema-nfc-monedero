@@ -32,8 +32,8 @@ app.use((req, res, next) => {
 // 📦 2. RUTA: OBTENER TODAS LAS PULSERAS (MONEDEROS CASHLESS)
 app.get('/pulseras', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id ASC');
-    res.json(resultado.rows); // 🚀 Regresa al formato clásico de Railway
+  const resultado = await pool.query('SELECT * FROM pulseras ORDER BY código_nfc ASC');
+  res.json(resultado.rows); // 🚀 Regresa al formato clásico de Railway
   } catch (err) {
     console.error("Error en pulseras:", err);
     res.status(500).json({ error: "Fallo en el servidor al leer pulseras" });
