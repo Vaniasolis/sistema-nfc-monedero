@@ -385,19 +385,20 @@ function App() {
     }
     
     try {
-      const res = await axios.put(`${apiUrlDinamica}/pulseras/recargar`, {
-        codigo_nfc: codigoNfc.trim(),
-        monto: parseFloat(saldo) // Lee el número limpio de tu casilla de saldo
-      });
-      
+  const res = await axios.put(`${apiUrlDinamica}/pulseras/recargar`, {
+    codigo_nfc: codigoNfc.trim(), // Elimina espacios en blanco accidentales
+    monto: parseFloat(saldo)     // Convierte la casilla de texto a número decimal
+  });
+  
       alert(res.data.mensaje || '¡Recarga exitosa!');
-      setCodigoNfc(''); // Limpia la casilla
-      setSaldo('');     // Limpia el saldo
-      cargarPulseras(); // Recarga tus tablas en tiempo real
+      setCodigoNfc(''); // Limpia la casilla del ID
+      setSaldo('');     // Limpia la casilla del dinero
+      if (typeof cargarPulseras === 'function') cargarPulseras(); // Refresca los balances en pantalla
     } catch (err) {
       console.error("Error en recarga:", err);
       alert(err.response?.data?.error || 'Error al intentar procesar la recarga en Railway');
-    }
+}
+
   };
 
   const obtenerTextoAcceso = (id) => {
@@ -719,7 +720,7 @@ function App() {
                           const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
                           if (!claveSeguridad) return;
 
-                          if (claveSeguridad !== 'admin123') {
+                          if (claveSeguridad !== 'admin29') {
                             alert('❌ Clave incorrecta. Acción denegada.');
                             return;
                           }
