@@ -1,48 +1,10 @@
 {
   "version": 2,
-  "builds": [
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "api/server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/productos(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/api/pulseras(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/api/ventas(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/productos(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/pulseras(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/ventas(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "dist/assets/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dist/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
