@@ -97,6 +97,7 @@ app.put('/pulseras/recargar', async (req, res) => {
   }
 });
 
+// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE COMPATIBLE CON RAILWAY)
 app.post('/ventas/multiple', async (req, res) => {
   const { codigo_nfc, items } = req.body;
   if (!codigo_nfc || !items || items.length === 0) {
@@ -104,40 +105,37 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // 1. Buscamos en pulseras usando el nombre de columna correcto 'codigo_nfc'
-    const pulserasEncontradas = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
-    if (pulserasEncontradas.rows.length === 0) {
-      return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
+    // 🌟 REGLA DE ORO: Buscamos la pulsera usando tu cliente tradicional pool.query
+    const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    if (busqueda.rows.length === 0) {
+      return res.status(404).json({ error: "La pulsera no existe en el sistema" });
     }
 
-    // 🚀 CORRECCIÓN CRÍTICA: extraemos correctamente el objeto de la fila encontrada
-    const pulsera = pulserasEncontradas.rows[0]; 
+    const pulsera = busqueda.rows[0]; // Extraemos el registro real con .rows[0]
     let costoTotal = 0;
 
+    // Calculamos el costo en caliente
     items.forEach(item => {
       costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
     });
 
     if (parseFloat(pulsera.saldo) < costoTotal) {
-      return res.status(400).json({ error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${parseFloat(pulsera.saldo).toFixed(2)}` });
+      return res.status(400).json({ error: `Saldo insuficiente. Total: $${costoTotal.toFixed(2)}, Saldo: $${parseFloat(pulsera.saldo).toFixed(2)}` });
     }
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 2. Actualizamos el saldo del monedero en la tabla 'pulseras'
+    // Actualizamos el monedero al instante en tu Neon SQL
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 3. 🚀 CORRECCIÓN FINAL EN LA TABLA VENTAS: 
-    // Insertamos únicamente en las columnas verificadas por tu JSON ('pulsera_id' y 'total')
-    await pool.query(
-      'INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', 
-      [codigo_nfc, costoTotal]
-    );
+    // Registramos la auditoría de la compra en la bitácora de ventas
+    const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+    await pool.query('INSERT INTO ventas (codigo_nfc, descripcion, monto) VALUES ($1, $2, $3)', [codigo_nfc, descripcionVenta, costoTotal]);
 
-    res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
+    res.json({ exito: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
   } catch (err) {
-    console.error("❌ Error en venta múltiple:", err.message);
+    console.error("❌ Error crítico en venta múltiple:", err.message);
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });
