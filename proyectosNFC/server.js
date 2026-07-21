@@ -254,18 +254,15 @@ app.post('/ventas/multiple', async (req, res) => {
       return res.status(400).json({ error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${parseFloat(pulsera.saldo).toFixed(2)}` });
     }
 
-    const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
+        const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 2. Restamos el dinero del saldo usando la columna 'codigo_nfc'
+    // 1. Actualizamos el saldo del monedero en la tabla 'pulseras'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 3. 🚀 CORRECCIÓN CRÍTICA DE INDICE: Extraemos correctamente el primer producto del arreglo
-    const primerProductoId = items[0]?.producto_id || null;
-
-    // Insertamos en las columnas reales de tu JSON de Neon: 'pulsera_id', 'total' y 'producto_id'
+    // 2. 🚀 INSERCIÓN LIMPIA: Enviamos solo las columnas que tu JSON y Neon aceptan de verdad
     await pool.query(
-      'INSERT INTO ventas (pulsera_id, total, producto_id) VALUES ($1, $2, $3)', 
-      [codigo_nfc, costoTotal, primerProductoId]
+      'INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', 
+      [codigo_nfc, costoTotal]
     );
 
     res.json({ guardado: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
@@ -344,5 +341,6 @@ app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor comercial corriendo en el puerto ${PORT}`);
+  console.log(`🚀 Servidor comercial corriendo en el puerto ${PORT}`); // 🔌 FORZANDO SUBIDA DE MÚLTIPLE
 });
+
