@@ -269,11 +269,11 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 2. Actualizamos el saldo del monedero en la tabla 'pulseras'
+    // 1. Actualizamos el monedero en la tabla 'pulseras'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 3. 🚀 CORRECCIÓN FINAL EN LA TABLA VENTAS: 
-    // Insertamos únicamente en las columnas verificadas por tu JSON ('pulsera_id' y 'total')
+    // 2. 🚀 CORRECCIÓN DEFINITIVA DE COLUMNAS (Línea 222):
+    // Eliminamos 'descripcion' e inyectamos solo 'pulsera_id' y 'total'
     await pool.query(
       'INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', 
       [codigo_nfc, costoTotal]
@@ -282,7 +282,7 @@ app.post('/ventas/multiple', async (req, res) => {
     res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
   } catch (err) {
-    console.error("❌ Error en venta múltiple:", err.message);
+    console.error("❌ Error en venta múltiple:", err.message); // El log que leímos
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });

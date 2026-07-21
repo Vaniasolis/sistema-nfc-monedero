@@ -1,5 +1,5 @@
 {
-  "$schema": "https://railway.com",
+    "$schema": "https://railway.app",
   "build": {
     "builder": "NIXPACKS",
     "rootDirectory": "proyectosNFC"
