@@ -4,7 +4,6 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
 
 // 🔌 CONFIGURACIÓN UNIFICADA DE LA BASE DE DATOS NEON
 const pool = new Pool({
@@ -68,12 +67,6 @@ app.put('/pulseras/recargar', async (req, res) => {
     console.error("❌ Error en PUT recargar:", err.message);
     res.status(500).json({ error: err.message });
   }
-});
-
-// 🔌 TU BÚNKER DE ESCUCHA (AL PURO FINAL)
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor comercial corriendo con éxito en el puerto ${PORT}`);
 });
 
 app.post('/ventas/multiple', async (req, res) => {
