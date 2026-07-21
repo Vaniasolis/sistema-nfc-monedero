@@ -41,21 +41,21 @@ app.get('/pulseras', async (req, res) => {
 });
 
 app.post('/pulseras', async (req, res) => {
-  const client = new Client(process.env.DATABASE_URL);
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
-    await client.connect();
-    await client.query(
-      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
+    
+    // 🚀 Usamos 'pool.query' directamente e insertamos usando comillas dobles en "código_nfc"
+    await pool.query(
+      'INSERT INTO pulseras ("código_nfc", tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
       [codigo_nfc, parseInt(tipo_acceso_id), parseFloat(saldo)]
     );
+    
     res.json({ guardado: true });
   } catch (err) {
     console.error("❌ ERROR EN POST PULSERAS:", err.message);
     res.status(500).json({ guardado: false, error: err.message });
-  } finally {
-    await client.end();
   }
+  // 🔌 Ya no hace falta el 'finally' porque el pool administra las conexiones de forma automática
 });
 
 app.put('/pulseras/recargar', async (req, res) => {
