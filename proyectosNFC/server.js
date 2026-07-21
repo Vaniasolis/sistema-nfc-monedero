@@ -96,7 +96,7 @@ app.put('/pulseras/recargar', async (req, res) => {
   }
 });
 
-// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE COMPATIBLE CON RAILWAY)
+// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE INDESTRUCTIBLE)
 app.post('/ventas/multiple', async (req, res) => {
   const { codigo_nfc, items } = req.body;
   if (!codigo_nfc || !items || items.length === 0) {
@@ -104,37 +104,41 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // 🌟 REGLA DE ORO: Buscamos la pulsera usando tu cliente tradicional pool.query
+    // Buscamos la pulsera directo con tu pool tradicional de Railway
     const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
     if (busqueda.rows.length === 0) {
-      return res.status(404).json({ error: "La pulsera no existe en el sistema" });
+      return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
     }
 
-    const pulsera = busqueda.rows[0]; // Extraemos el registro real con .rows[0]
+    // 🌟 REGLA DE ORO SENIOR: Extraemos la primera pulsera usando strictly el arreglo .rows[0]
+    const pulsera = busqueda.rows[0]; 
     let costoTotal = 0;
 
-    // Calculamos el costo en caliente
+    // Calculamos el costo de las bebidas en caliente
     items.forEach(item => {
       costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
     });
 
-    if (parseFloat(pulsera.saldo) < costoTotal) {
-      return res.status(400).json({ error: `Saldo insuficiente. Total: $${costoTotal.toFixed(2)}, Saldo: $${parseFloat(pulsera.saldo).toFixed(2)}` });
+    // Validamos el saldo real leyendo la columna exacta de tu foto de Neon
+    const saldoActual = parseFloat(pulsera.saldo || 0);
+
+    if (saldoActual < costoTotal) {
+      return res.status(400).json({ error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${saldoActual.toFixed(2)}` });
     }
 
-    const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
+    const nuevoSaldo = saldoActual - costoTotal;
 
-    // Actualizamos el monedero al instante en tu Neon SQL
+    // Actualizamos el monedero al milisegundo en tu tabla de Neon SQL
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // Registramos la auditoría de la compra en la bitácora de ventas
+    // Registramos la auditoría de la compra en la bitácora de ventas de Railway
     const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
     await pool.query('INSERT INTO ventas (codigo_nfc, descripcion, monto) VALUES ($1, $2, $3)', [codigo_nfc, descripcionVenta, costoTotal]);
 
-    res.json({ exito: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
+    res.json({ exito: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
   } catch (err) {
-    console.error("❌ Error crítico en venta múltiple:", err.message);
+    console.error("❌ Error interno crítico en venta múltiple Railway:", err.message);
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });
