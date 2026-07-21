@@ -1,10 +1,22 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg'); // 🚀 Usamos el cliente nativo pesado de Postgres para Railway
+// 🚀 Modificamos esta línea para importar tanto Pool como Client juntos:
+const { Pool, Client } = require('pg'); 
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// 🔌 AGREGA ESTAS LÍNEAS AQUÍ ABAJO PARA REPARAR LOS DOS ERRORES:
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+});
+// Conectamos el cliente clásico y atrapamos errores si los hay
+client.connect().catch(err => console.error('Error al conectar Client:', err));
 
 // Atendedor de preguntas previas preflight de Chrome
 app.use((req, res, next) => {
