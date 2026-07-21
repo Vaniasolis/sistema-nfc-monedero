@@ -144,29 +144,16 @@ app.delete('/productos/:id', async (req, res) => {
 });
 
 // 🗑️ RUTA: ELIMINAR UNA PULSERA INDIVIDUAL Y SUS REGISTROS (Línea 302)
-app.delete('/pulseras/eliminar/:id', async (req, res) => {
+app.get('/pulseras/eliminar/:id', async (req, res) => {
   const { id } = req.params;
-
-  if (!id) {
-    return res.status(400).json({ error: "Identificador de pulsera no proporcionado" });
-  }
-
   try {
-    // 🚀 Usamos directamente 'pool.query' sin llamar a 'Client'
-    // 1. Limpiamos las ventas de esta pulsera para evitar bloqueos relacionales
+    // Redirigimos internamente la lógica de borrado de forma segura
     await pool.query('DELETE FROM ventas WHERE pulsera_id = $1', [id]).catch(()=>{});
-    await pool.query('DELETE FROM ventas WHERE codigo_nfc = $1', [id]).catch(()=>{});
-
-    // 2. Borramos la pulsera usando la columna correcta
     await pool.query('DELETE FROM pulseras WHERE codigo_nfc = $1', [id]);
-
-    res.json({ 
-      exito: true, 
-      mensaje: `🗑️ Pulsera ${id} eliminada correctamente del sistema.` 
-    });
-
+    
+    res.json({ exito: true, mensaje: `🗑️ Pulsera ${id} eliminada con éxito mediante canal de soporte.` });
   } catch (err) {
-    console.error("❌ Error interno en DELETE pulsera individual:", err.message);
+    console.error("❌ Error en GET de soporte para borrar:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -371,23 +358,6 @@ app.get('/reporte-ventas', async (req, res) => {
   }
 });
 
-// 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
-app.delete('/pulseras/limpiar', async (req, res) => {
-  const client = new Client(process.env.DATABASE_URL);
-  try {
-    await client.connect();
-    // Borramos primero las ventas para liberar candados relacionales
-    await client.query('DELETE FROM ventas;');
-    // Ahora vaciamos las pulseras de taquilla manteniendo tu catálogo de bebidas intacto
-    await client.query('DELETE FROM pulseras;');
-    return res.json({ mensaje: '🧹 Evento reiniciado con éxito. Registros y ventas vaciados en ceros.' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
-  } finally {
-    await client.end();
-  }
-});
 
 // 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
 app.delete('/pulseras/limpiar', async (req, res) => {
