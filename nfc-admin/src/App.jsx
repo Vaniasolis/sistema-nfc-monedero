@@ -97,14 +97,13 @@ function App() {
 
 
 
-    // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
   const cargarPulseras = async () => {
     try {
-      // 🚀 ELIMINAMOS EL SALVAVIDAS FANTASMA: Va directo a tu subdominio de Vercel
+      // 🚀 Conexión directa hacia tu servidor activo en Railway (Evita bloqueos de caché)
       const res = await axios.get(`${apiUrlDinamica}/pulseras?_nocache=${new Date().getTime()}`);
       if (Array.isArray(res.data)) {
         setPulseras(res.data);
-        console.log("📡 MÓDULO SINCRO: Pulseras descargadas con éxito desde Vercel gratis.");
+        console.log("📡 MÓDULO SINCRO: Pulseras descargadas con éxito desde tu servidor de Railway.");
       }
     } catch (err) {
       console.error("❌ Error al cargar pulseras desde la nube:", err);
@@ -114,7 +113,7 @@ function App() {
   // 🍺 FUNCIÓN DE CARGA DE BEBIDAS DINÁMICA ULTRA-BLINDADA PARA AMBOS EVENTOS
    const cargarProductos = async () => {
     try {
-      // 🚀 ELIMINAMOS EL SALVAVIDAS FANTASMA: Va directo a tu subdominio de Vercel
+      
       const res = await axios.get(`${apiUrlDinamica}/productos`);
       if (Array.isArray(res.data)) {
         setProductos(res.data);
