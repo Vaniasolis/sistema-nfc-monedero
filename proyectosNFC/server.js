@@ -21,30 +21,25 @@ app.get('/', (req, res) => {
 });
 
 // 📦 1. RUTA: OBTENER TODOS LOS PRODUCTOS
-app.get('/productos', async (req, res) => {
-  try {
-    // 🌟 CORRECCIÓN: Cambiamos 'client.query' por 'pool.query'
-    const resultado = await pool.query('SELECT * FROM productos ORDER BY id ASC');
-    res.json(resultado.rows);
-  } catch (err) {
-    console.error("❌ Error en GET productos:", err.message);
-    res.status(500).json({ error: "Fallo en el servidor al leer productos" });
+app.post('/productos', async (req, res) => {
+  const { nombre, precio, stock } = req.body;
+  if (!nombre || !precio) {
+    return res.status(400).json({ error: "El nombre y el precio son obligatorios" });
   }
-});
-
-// 📦 1. RUTA: OBTENER TODAS LAS PULSERAS (CORREGIDO SIN 'id')
-app.get('/pulseras', async (req, res) => {
   try {
-    // 🌟 Eliminamos 'ORDER BY id' para evitar el cortocircuito si no existe la columna id
-    const resultado = await pool.query('SELECT * FROM pulseras');
-    res.json(resultado.rows);
+    // Inyectamos el producto en tu tabla de Neon SQL usando la variable pool
+    await pool.query(
+      'INSERT INTO productos (nombre, precio, stock) VALUES ($1, $2, $3)',
+      [nombre, parseFloat(precio), parseInt(stock || 0)]
+    );
+    res.json({ exito: true, mensaje: "🎉 ¡Bebida guardada con éxito en el catálogo de Railway!" });
   } catch (err) {
-    console.error("❌ Error en GET pulseras:", err.message);
+    console.error("❌ Error en POST registrar producto:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 🔋 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (CORREGIDO CON 'tipo_acceso')
+// 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (CORREGIDO CON 'tipo_acceso')
 app.post('/pulseras', async (req, res) => {
   const { codigo_nfc, tipo_acceso, saldo } = req.body;
   if (!codigo_nfc) {
