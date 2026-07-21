@@ -219,7 +219,7 @@ app.post('/ventas/multiple', async (req, res) => {
 
     // Registramos la auditoría de la compra en la bitácora
     const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
-    await pool.query('INSERT INTO ventas (codigo_nfc, descripcion, monto) VALUES ($1, $2, $3)', [codigo_nfc, descripcionVenta, costoTotal]);
+    await pool.query('INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)',[codigo_nfc, costoTotal]);
 
     res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
