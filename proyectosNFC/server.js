@@ -143,7 +143,7 @@ app.delete('/productos/:id', async (req, res) => {
   }
 });
 
-// 🗑️ RUTA: ELIMINAR UNA PULSERA INDIVIDUAL Y SUS REGISTROS
+// 🗑️ RUTA: ELIMINAR UNA PULSERA INDIVIDUAL Y SUS REGISTROS (Línea 302)
 app.delete('/pulseras/eliminar/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -152,16 +152,13 @@ app.delete('/pulseras/eliminar/:id', async (req, res) => {
   }
 
   try {
-    // 🚀 BLINDAJE RELACIONAL DE DOS VÍAS:
-    // Intentamos eliminar del historial buscando por ambas columnas posibles en Neon para que nunca falle por restricciones de llave foránea:
+    // 🚀 Usamos directamente 'pool.query' sin llamar a 'Client'
+    // 1. Limpiamos las ventas de esta pulsera para evitar bloqueos relacionales
     await pool.query('DELETE FROM ventas WHERE pulsera_id = $1', [id]).catch(()=>{});
     await pool.query('DELETE FROM ventas WHERE codigo_nfc = $1', [id]).catch(()=>{});
 
-    // Ahora eliminamos la pulsera de la tabla principal
-    const resultadoBorrado = await pool.query('DELETE FROM pulseras WHERE codigo_nfc = $1', [id]);
-
-    // Si la columna en tu tabla pulseras se llama pulsera_id en lugar de codigo_nfc, descomenta la línea de abajo:
-    // await pool.query('DELETE FROM pulseras WHERE pulsera_id = $1', [id]);
+    // 2. Borramos la pulsera usando la columna correcta
+    await pool.query('DELETE FROM pulseras WHERE codigo_nfc = $1', [id]);
 
     res.json({ 
       exito: true, 
@@ -170,9 +167,10 @@ app.delete('/pulseras/eliminar/:id', async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error interno en DELETE pulsera individual:", err.message);
-    res.status(500).json({ error: err.message }); // Le pasamos el mensaje real al cliente para diagnosticar
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 // 🛒 RUTAS DE PUNTO DE VENTA (POS) - CORREGIDA SIN RESPUESTAS DUPLICADAS
 app.post('/ventas', async (req, res) => {
