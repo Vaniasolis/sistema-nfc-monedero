@@ -76,23 +76,22 @@ app.put('/pulseras/recargar', async (req, res) => {
     return res.status(400).json({ error: "Datos incompletos para la recarga" });
   }
   try {
-    // 🌟 REGLA DE ORO: 'client' en minúsculas para tu consulta
-    const busqueda = await client.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    // 🌟 UNIFICACIÓN: Cambiamos 'client.query' por 'pool.query' con letras minúsculas
+    const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
     
     if (busqueda.rows.length === 0) {
       return res.status(404).json({ error: "La pulsera no existe" });
     }
     
-    // Extraemos la primera pulsera indexándola con [0]
-    const pulsera = busqueda.rows[0]; 
+    const pulsera = busqueda.rows[0]; // Extraemos el primer registro del arreglo clásico .rows
     const nuevoSaldo = parseFloat(pulsera.saldo || 0) + parseFloat(monto);
     
-    // Actualizamos el saldo real en tu base de datos
-    await client.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
+    // 🌟 UNIFICACIÓN: Actualizamos el saldo real usando pool.query en tu Neon SQL
+    await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
     
     res.json({ exito: true, mensaje: `🔋 Recarga exitosa. Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
   } catch (err) {
-    console.error("❌ Error en PUT recargar:", err.message);
+    console.error("❌ Error en PUT recargar Railway:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
