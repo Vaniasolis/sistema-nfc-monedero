@@ -44,6 +44,25 @@ app.get('/pulseras', async (req, res) => {
   }
 });
 
+// 🔋 RUTA ADICIONAL: REGISTRAR UNA NUEVA PULSERA CASHLESS (EVITA EL ERROR 404)
+app.post('/pulseras', async (req, res) => {
+  const { codigo_nfc, tipo_acceso, saldo } = req.body;
+  if (!codigo_nfc) {
+    return res.status(400).json({ error: "El código NFC es obligatorio" });
+  }
+  try {
+    // Insertamos la pulsera usando la variable unificada pool
+    await pool.query(
+      'INSERT INTO pulseras (codigo_nfc, acceso, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET acceso = $2, saldo = $3',
+      [codigo_nfc, tipo_acceso || 'Cover', parseFloat(saldo || 0)]
+    );
+    res.json({ exito: true, mensaje: "🎉 ¡Pulsera registrada con éxito en Railway!" });
+  } catch (err) {
+    console.error("❌ Error en POST registrar pulsera:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO)
 app.put('/pulseras/recargar', async (req, res) => {
   const { codigo_nfc, monto } = req.body;
