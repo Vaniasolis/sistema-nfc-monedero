@@ -4,11 +4,11 @@
   "rewrites": [
     {
       "source": "/productos(.*)",
-      "destination": "https://railway.app"
+      "destination": "https://sistema-nfc-monedero-production.up.railway.app"
     },
     {
       "source": "/pulseras(.*)",
-      "destination": "https://railway.app"
+      "destination": "https://sistema-nfc-monedero-production.up.railway.app"
     },
     {
       "source": "/(.*)",
