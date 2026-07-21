@@ -269,13 +269,13 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 1. Actualizamos el monedero en la tabla 'pulseras'
+    // 1. Actualizamos el saldo del monedero en la tabla 'pulseras'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 2. 🚀 CORRECCIÓN DEFINITIVA DE COLUMNAS (Línea 222):
-    // Eliminamos 'descripcion' e inyectamos solo 'pulsera_id' y 'total'
+    // 2. 🚀 CORRECCIÓN DEFINITIVA DE LA TABLA HISTORIAL:
+    // Cambiamos 'ventas' por 'historial_ventas' para insertar en la tabla real de auditoría
     await pool.query(
-      'INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', 
+      'INSERT INTO historial_ventas (pulsera_id, total) VALUES ($1, $2)', 
       [codigo_nfc, costoTotal]
     );
 
