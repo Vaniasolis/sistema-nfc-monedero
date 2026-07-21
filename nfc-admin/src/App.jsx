@@ -569,11 +569,11 @@ function App() {
           onChange={(e) => cambiarCanalEvento(e.target.value, e.target)}
           style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
         >
-          {/* 🌟 Canal 1: Tu nuevo servidor unificado y gratuito en Vercel */}
-          <option value="https://vercel.app">🎟️ Evento 1 (Vercel Gratis)</option>
+        {/* 🌟 Canal 1: Tu nuevo servidor unificado en Railway */}
+          <option value="https://railway.app">🎟️ Evento 1 (Railway Producción)</option>
           
-          {/* 🌟 Canal 2: Respaldo en Vercel por si lo necesitas a futuro */}
-          <option value="https://vercel.app">🎵 Evento 2 (Vercel Respaldo)</option>
+          {/* 🌟 Canal 2: Si tienes un segundo evento, apunta a su respectivo puerto o URL de Railway */}
+          <option value="https://railway.app">🎵 Evento 2 (Railway Respaldo)</option>
         </select>
       </div>
       
