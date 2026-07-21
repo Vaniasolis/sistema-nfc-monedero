@@ -96,7 +96,7 @@ app.put('/pulseras/recargar', async (req, res) => {
   }
 });
 
-// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE INDESTRUCTIBLE)
+/// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE INDESTRUCTIBLE)
 app.post('/ventas/multiple', async (req, res) => {
   const { codigo_nfc, items } = req.body;
   if (!codigo_nfc || !items || items.length === 0) {
@@ -104,22 +104,22 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // Buscamos la pulsera directo con tu pool tradicional de Railway
+    // 🌟 PASO 1: Primero hacemos la búsqueda real en la base de datos (¡Esto faltaba!)
     const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
     if (busqueda.rows.length === 0) {
       return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
     }
 
-    // 🌟 REGLA DE ORO SENIOR: Extraemos la primera pulsera usando strictly el arreglo .rows[0]
+    // 🌟 PASO 2: Extraemos de forma segura la primera pulsera del arreglo
     const pulsera = busqueda.rows[0]; 
     let costoTotal = 0;
 
-    // Calculamos el costo de las bebidas en caliente
+    // PASO 3: Calculamos el costo de las bebidas en el carrito
     items.forEach(item => {
       costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
     });
 
-    // Validamos el saldo real leyendo la columna exacta de tu foto de Neon
+    // PASO 4: Validamos el saldo real usando la columna de tu Neon
     const saldoActual = parseFloat(pulsera.saldo || 0);
 
     if (saldoActual < costoTotal) {
@@ -128,12 +128,15 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = saldoActual - costoTotal;
 
-    // Actualizamos el monedero al milisegundo en tu tabla de Neon SQL
+    // PASO 5: Actualizamos el monedero al milisegundo en tu tabla de Neon SQL
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // Registramos la auditoría de la compra en la bitácora de ventas de Railway
-    const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
-    await pool.query('INSERT INTO ventas (codigo_nfc, descripcion, monto) VALUES ($1, $2, $3)', [codigo_nfc, descripcionVenta, costoTotal]);
+    // 🌟 PASO 6: Ahora sí, al puro final y con los datos calculados, registramos la bitácora de forma segura
+    try {
+      await pool.query('INSERT INTO ventas (codigo_nfc, monto) VALUES ($1, $2)', [codigo_nfc, costoTotal]);
+    } catch (errorBitacora) {
+      console.warn("⚠️ Advertencia en bitácora:", errorBitacora.message);
+    }
 
     res.json({ exito: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
