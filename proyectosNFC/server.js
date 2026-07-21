@@ -23,8 +23,9 @@ app.get('/', (req, res) => {
 // 📦 1. RUTA: OBTENER TODOS LOS PRODUCTOS
 app.get('/productos', async (req, res) => {
   try {
-    const resultado = await client.query('SELECT * FROM productos ORDER BY id ASC');
-    res.json(resultado.rows); // 🚀 Formato clásico compatible con Railway (.rows)
+    // 🌟 CORRECCIÓN: Cambiamos 'client.query' por 'pool.query'
+    const resultado = await pool.query('SELECT * FROM productos ORDER BY id ASC');
+    res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en GET productos:", err.message);
     res.status(500).json({ error: "Fallo en el servidor al leer productos" });
@@ -34,8 +35,9 @@ app.get('/productos', async (req, res) => {
 // 📦 2. RUTA: OBTENER TODAS LAS PULSERAS
 app.get('/pulseras', async (req, res) => {
   try {
-    const resultado = await client.query('SELECT * FROM pulseras ORDER BY id ASC');
-    res.json(resultado.rows); // 🚀 Formato clásico compatible con Railway (.rows)
+    // 🌟 CORRECCIÓN: Cambiamos 'client.query' por 'pool.query'
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id ASC');
+    res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en GET pulseras:", err.message);
     res.status(500).json({ error: "Fallo en el servidor al leer pulseras" });
