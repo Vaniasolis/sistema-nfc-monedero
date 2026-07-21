@@ -243,26 +243,31 @@ app.post('/ventas/multiple', async (req, res) => {
       return res.status(404).json({ error: "La pulsera no existe en el sistema" });
     }
 
+    // 🚀 CORRECCIÓN DEFINITIVA: Extraemos el primer elemento del arreglo con [0]
     const pulsera = pulserasEncontradas.rows[0]; 
     let costoTotal = 0;
 
     items.forEach(item => {
-      costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
+      costoTotal += parseFloat(item.precio || 0) * parseInt(item.cantidad || 1);
     });
 
-    if (parseFloat(pulsera.saldo) < costoTotal) {
+    // Validamos el saldo leyendo el objeto purificado de la fila [0]
+    if (parseFloat(pulsera.saldo || 0) < costoTotal) {
       return res.status(400).json({ error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${parseFloat(pulsera.saldo).toFixed(2)}` });
     }
 
-        const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
+    const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // 1. Actualizamos el saldo del monedero en la tabla 'pulseras'
+    // 2. Restamos el dinero del saldo usando la columna 'codigo_nfc'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 2. 🚀 INSERCIÓN LIMPIA: Enviamos solo las columnas que tu JSON y Neon aceptan de verdad
+    // 3. Extraemos el primer producto_id del carrito para evitar fallos de arrays
+    const primerProductoId = items[0]?.producto_id || null;
+
+    // Insertamos en las columnas de tu JSON de Neon: 'pulsera_id' y 'total'
     await pool.query(
-      'INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', 
-      [codigo_nfc, costoTotal]
+      'INSERT INTO ventas (pulsera_id, total, producto_id) VALUES ($1, $2, $3)', 
+      [codigo_nfc, costoTotal, primerProductoId]
     );
 
     res.json({ guardado: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
@@ -272,6 +277,7 @@ app.post('/ventas/multiple', async (req, res) => {
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });
+
 
 // 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
 app.delete('/pulseras/limpiar', async (req, res) => {
