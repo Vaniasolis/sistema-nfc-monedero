@@ -28,8 +28,8 @@ app.use((req, res, next) => {
 // 📦 2. RUTA: OBTENER TODAS LAS PULSERAS (MONEDEROS CASHLESS)
 app.get('/pulseras', async (req, res) => {
   try {
-    // Usamos "código_nfc" con comillas dobles tal como vimos en tu Neon Cloud
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY "código_nfc" ASC');
+    // 🚀 Cambiado a 'codigo_nfc' sin tilde ni comillas
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY codigo_nfc ASC');
     res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en pulseras:", err.message);
@@ -40,8 +40,9 @@ app.get('/pulseras', async (req, res) => {
 app.post('/pulseras', async (req, res) => {
   try {
     const { codigo_nfc, tipo_acceso_id, saldo } = req.body;
+    // 🚀 Cambiado a 'codigo_nfc' sin tilde ni comillas en los campos del INSERT
     await pool.query(
-      'INSERT INTO pulseras ("código_nfc", tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
+      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3);',
       [codigo_nfc, parseInt(tipo_acceso_id) || 1, parseFloat(saldo) || 0]
     );
     res.json({ guardado: true });
