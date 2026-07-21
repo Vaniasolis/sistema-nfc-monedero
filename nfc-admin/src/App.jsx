@@ -97,6 +97,7 @@ function App() {
 
 
 
+  // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
   const cargarPulseras = async () => {
     try { 
       // 1. SALVAVIDAS: Si apiUrlDinamica se duerme un milisegundo, usa tu enlace oficial de Railway
@@ -376,15 +377,6 @@ function App() {
   // 🎟️ 2. FUNCIÓN EXCLUSIVA PARA RECARGAR SALDO (TAQUILLA PRINCIPAL)
   const manejarRecarga = async (e) => {
     e.preventDefault();
-
-    const claveSupervisor = prompt('🔒 AUTORIZACIÓN DE TAQUILLA:\nIntroduzca la clave de administrador para autorizar esta recarga de saldo:');
-    
-    if (!claveSupervisor) return; // Si presiona cancelar o cierra la ventana, se detiene el flujo en paz
-    if (claveSupervisor !== 'admin29') { 
-      if (navigator.vibrate) navigator.vibrate(250); // Vibración de rechazo en tu Samsung S25
-      alert('❌ Clave de Supervisor Incorrecta. Recarga rechazada por seguridad.'); 
-      return; // Detiene por completo la ejecución y bloquea el cobro
-    }
     
     // 🌟 REGLA DE ORO: Usamos 'codigoNfc' y 'saldo' que son tus variables reales de los inputs
     if (!codigoNfc || !saldo) {
@@ -720,25 +712,34 @@ function App() {
                           💵 Recargar
                         </button>
 
-                        {/* Botón B: Eliminar */}
+                        {/* 🚀 DEJA TU BOTÓN ROJO EXACTAMENTE CON ESTA ESTRUCTURA: */}
                         <button 
-                          type="button" 
-                          onClick={async () => {
-                            const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
-                            if (!claveSeguridad) return;
-                            if (claveSeguridad !== 'admin29') { alert('❌ Clave incorrecta. Acción denegada.'); return; }
-                            if (!window.confirm(`¿Confirmas la eliminación permanente de la pulsera ${p.codigo_nfc}?`)) return;
+                        type="button" 
+                        onClick={async () => {
+                          const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
+                          if (!claveSeguridad) return;
 
-                            try {
-                              const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
-                              alert(res.data.mensaje);
-                              cargarPulseras(); 
-                            } catch (e) { alert(e.response?.data?.error || 'No se pudo eliminar la pulsera.'); }
-                          }} 
-                          style={{ width: '90px', padding: '6px 0', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', textAlign: 'center' }}
-                        >
-                          🗑️ Eliminar
-                        </button>
+                          if (claveSeguridad !== 'admin123') {
+                            alert('❌ Clave incorrecta. Acción denegada.');
+                            return;
+                          }
+
+                          if (!window.confirm(`¿Confirmas la eliminación permanente de la pulsera ${p.codigo_nfc}?`)) {
+                            return;
+                          }
+
+                          try {
+                            const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
+                            alert(res.data.mensaje);
+                            cargarPulseras(); 
+                          } catch (e) {
+                            alert(e.response?.data?.error || 'No se pudo eliminar la pulsera.');
+                          }
+                        }} 
+                        style={{ padding: '6px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}
+                      >
+                        🗑️ Eliminar
+                      </button>
 
                       </div>
                     </td>
