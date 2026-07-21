@@ -32,28 +32,28 @@ app.get('/productos', async (req, res) => {
   }
 });
 
-// 📦 2. RUTA: OBTENER TODAS LAS PULSERAS
+// 📦 1. RUTA: OBTENER TODAS LAS PULSERAS (CORREGIDO SIN 'id')
 app.get('/pulseras', async (req, res) => {
   try {
-    // 🌟 CORRECCIÓN: Cambiamos 'client.query' por 'pool.query'
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id ASC');
+    // 🌟 Eliminamos 'ORDER BY id' para evitar el cortocircuito si no existe la columna id
+    const resultado = await pool.query('SELECT * FROM pulseras');
     res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en GET pulseras:", err.message);
-    res.status(500).json({ error: "Fallo en el servidor al leer pulseras" });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// 🔋 RUTA ADICIONAL: REGISTRAR UNA NUEVA PULSERA CASHLESS (EVITA EL ERROR 404)
+// 🔋 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (CORREGIDO CON 'tipo_acceso')
 app.post('/pulseras', async (req, res) => {
   const { codigo_nfc, tipo_acceso, saldo } = req.body;
   if (!codigo_nfc) {
     return res.status(400).json({ error: "El código NFC es obligatorio" });
   }
   try {
-    // Insertamos la pulsera usando la variable unificada pool
+    // 🌟 Cambiamos la palabra 'acceso' por 'tipo_acceso' para que coincida con tu tabla de Neon
     await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, acceso, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET acceso = $2, saldo = $3',
+      'INSERT INTO pulseras (codigo_nfc, tipo_acceso, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET tipo_acceso = $2, saldo = $3',
       [codigo_nfc, tipo_acceso || 'Cover', parseFloat(saldo || 0)]
     );
     res.json({ exito: true, mensaje: "🎉 ¡Pulsera registrada con éxito en Railway!" });
@@ -62,6 +62,7 @@ app.post('/pulseras', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO)
 app.put('/pulseras/recargar', async (req, res) => {
