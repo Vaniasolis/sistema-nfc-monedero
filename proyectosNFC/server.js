@@ -1,13 +1,16 @@
 const express = require('express');
 const cors = require('cors');
-const { Client, neonConfig } = require('@neondatabase/serverless');
-const ws = require('ws');
-
-// Configuración obligatoria de WebSockets para Railway
-neonConfig.webSocketConstructor = ws;
+const { Pool } = require('pg'); // 🚀 Usamos el cliente nativo pesado de Postgres para Railway
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 
+// 🔌 CONEXIÓN MAESTRA A TU BASE DE DATOS NEON EN RAILWAY
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 // Atendedor de preguntas previas preflight de Chrome
 app.use((req, res, next) => {
@@ -23,8 +26,8 @@ app.use((req, res, next) => {
 // 📦 2. RUTA: OBTENER TODAS LAS PULSERAS (MONEDEROS CASHLESS)
 app.get('/pulseras', async (req, res) => {
   try {
-    const datosPulseras = await sql`SELECT * FROM pulseras ORDER BY id ASC`;
-    res.json(datosPulseras);
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id ASC');
+    res.json(resultado.rows); // 🚀 Regresa al formato clásico de Railway
   } catch (err) {
     console.error("Error en pulseras:", err);
     res.status(500).json({ error: "Fallo en el servidor al leer pulseras" });
@@ -64,12 +67,11 @@ app.put('/pulseras/recargar', async (req, res) => {
   }
 });
 
-// 📦 1. RUTA: OBTENER TODOS LOS PRODUCTOS (CATÁLOGO TURQUESA)
+// 📦 1. RUTA: OBTENER TODOS LOS PRODUCTOS
 app.get('/productos', async (req, res) => {
   try {
-    // Sintaxis HTTP directa con tu nueva variable sql de la línea 17
-    const datosProductos = await sql`SELECT * FROM productos ORDER BY id ASC`;
-    res.json(datosProductos); // 🚀 Mandamos los datos limpios de golpe (sin .rows)
+    const resultado = await pool.query('SELECT * FROM productos ORDER BY id ASC');
+    res.json(resultado.rows); // 🚀 Regresa al formato clásico de Railway
   } catch (err) {
     console.error("Error en productos:", err);
     res.status(500).json({ error: "Fallo en el servidor al leer productos" });
@@ -194,16 +196,14 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // Buscamos la pulsera directo con el cliente HTTP
-    const pulserasEncontradas = await sql`SELECT * FROM pulseras WHERE codigo_nfc = ${codigo_nfc}`;
-    if (pulserasEncontradas.length === 0) {
+    const pulserasEncontradas = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    if (pulserasEncontradas.rows.length === 0) {
       return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
     }
 
-    const pulsera = pulserasEncontradas[0]; // Extraemos el primer registro de la lista limpia
+    const pulsera = pulserasEncontradas.rows[0];
     let costoTotal = 0;
 
-    // Calculamos el costo en caliente
     items.forEach(item => {
       costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
     });
@@ -214,12 +214,12 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // Actualizamos el monedero en un milisegundo
-    await sql`UPDATE pulseras SET saldo = ${nuevoSaldo} WHERE codigo_nfc = ${codigo_nfc}`;
+    // Actualizamos el monedero en un milisegundo en Railway
+    await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
     // Registramos la auditoría de la compra en la bitácora
     const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
-    await sql`INSERT INTO ventas (codigo_nfc, descripcion, monto) VALUES (${codigo_nfc}, ${descripcionVenta}, ${costoTotal})`;
+    await pool.query('INSERT INTO ventas (codigo_nfc, descripcion, monto) VALUES ($1, $2, $3)', [codigo_nfc, descripcionVenta, costoTotal]);
 
     res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
@@ -227,6 +227,12 @@ app.post('/ventas/multiple', async (req, res) => {
     console.error("Error en venta múltiple:", err);
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
+});
+
+// 🔌 BÚNKER DE ESCUCHA TRADICIONAL DE RAILWAY
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(` Servidor comercial corriendo en el puerto ${PORT}`);
 });
 
 app.get('/reporte-ventas', async (req, res) => {
