@@ -229,6 +229,19 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 });
 
+// 📦 RUTA SOPORTE: Evita el error Cannot GET cuando el frontend consulta el endpoint
+app.get('/ventas/multiple', async (req, res) => {
+  try {
+    // Regresa la lista de la bitácora de ventas para que el frontend la pueda listar
+    const resultado = await pool.query('SELECT * FROM ventas ORDER BY id DESC LIMIT 50');
+    res.json(resultado.rows);
+  } catch (err) {
+    console.error("❌ Error al consultar GET ventas múltiples:", err.message);
+    res.json([]); // Regresa un arreglo vacío seguro para que el frontend no se rompa si la tabla no existe
+  }
+});
+
+
 app.get('/reporte-ventas', async (req, res) => {
   const client = new Client(process.env.DATABASE_URL);
   try {
