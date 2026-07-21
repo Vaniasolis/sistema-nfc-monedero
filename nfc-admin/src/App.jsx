@@ -307,7 +307,13 @@ function App() {
     try {
       const res = await axios.post(`${apiUrlDinamica}/ventas/multiple`, {
         codigo_nfc: idPulseraLimpia,
-        items: carritoVenta.map(item => ({ producto_id: item.producto_id, precio: item.precio }))
+        // 🚀 Agregamos 'cantidad' y 'nombre' para que el backend calcule y guarde con éxito
+        items: carritoVenta.map(item => ({ 
+          producto_id: item.producto_id, 
+          nombre: item.nombre || 'Bebida',
+          precio: item.precio,
+          cantidad: item.cantidad || 1 
+        }))
       });
       
             alert(res.data.mensaje || `🎉 ¡Cobro de $${costoTotalCarrito.toFixed(2)} completado con éxito!`);

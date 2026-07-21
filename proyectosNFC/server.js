@@ -249,13 +249,14 @@ app.post('/ventas/multiple', async (req, res) => {
   }
 
   try {
-    // 🚀 Corregido: Buscamos en pulseras por 'codigo_nfc' (que ya validamos que se llama así)
+    // 1. Buscamos en pulseras usando el nombre de columna correcto 'codigo_nfc'
     const pulserasEncontradas = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
     if (pulserasEncontradas.rows.length === 0) {
       return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
     }
 
-    const pulsera = pulserasEncontradas.rows[0];
+    // 🚀 CORRECCIÓN CRÍTICA: extraemos correctamente el objeto de la fila encontrada
+    const pulsera = pulserasEncontradas.rows[0]; 
     let costoTotal = 0;
 
     items.forEach(item => {
@@ -268,24 +269,23 @@ app.post('/ventas/multiple', async (req, res) => {
 
     const nuevoSaldo = parseFloat(pulsera.saldo) - costoTotal;
 
-    // Actualizamos el monedero en Railway
+    // 2. Actualizamos el saldo del monedero en la tabla 'pulseras'
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 🚀 CORREGIDO AQUÍ: Cambiamos 'codigo_nfc' por 'pulsera_id' e insertamos 'monto' como 'total'
-    const descripcionVenta = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+    // 3. 🚀 CORRECCIÓN FINAL EN LA TABLA VENTAS: 
+    // Insertamos únicamente en las columnas verificadas por tu JSON ('pulsera_id' y 'total')
     await pool.query(
-      'INSERT INTO ventas (pulsera_id, descripcion, total) VALUES ($1, $2, $3)', 
-      [codigo_nfc, descripcionVenta, costoTotal]
+      'INSERT INTO ventas (pulsera_id, total) VALUES ($1, $2)', 
+      [codigo_nfc, costoTotal]
     );
 
     res.json({ mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
   } catch (err) {
-    console.error("Error en venta múltiple:", err);
+    console.error("❌ Error en venta múltiple:", err.message);
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
   }
 });
-
 
 // 🧹 RUTA DE REINICIO TOTAL CORREGIDA: Vacía historial de ventas y pulseras, pero respeta las bebidas
 app.delete('/pulseras/limpiar', async (req, res) => {
