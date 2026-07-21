@@ -569,10 +569,10 @@ function App() {
           style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
         >
         {/* 🌟 Canal 1: Tu nuevo servidor unificado en Railway */}
-          <option value="https://railway.app">🎟️ Evento 1 (Railway Producción)</option>
+          <option value="https://sistema-nfc-monedero-production.up.railway.app">🎟️ Evento 1 (Railway Producción)</option>
           
-          {/* 🌟 Canal 2: Si tienes un segundo evento, apunta a su respectivo puerto o URL de Railway */}
-          <option value="https://railway.app">🎵 Evento 2 (Railway Respaldo)</option>
+          {/* 🌟 Canal 2: Apunta también a tu subdominio real */}
+          <option value="https://sistema-nfc-monedero-production.up.railway.app">🎵 Evento 2 (Railway Respaldo)</option>
         </select>
       </div>
       
