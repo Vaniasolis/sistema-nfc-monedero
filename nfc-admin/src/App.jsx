@@ -95,183 +95,181 @@ function App() {
     };
   }, [apiUrlDinamica]); // 🚀 Se ejecuta al arrancar y cada vez que cambias de Evento en el menú superior
 
-
-
   // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
-  const cargarPulseras = async () => {
-    try { 
-      // 1. SALVAVIDAS: Si apiUrlDinamica se duerme un milisegundo, usa tu enlace oficial de Railway
-      const enlaceReal = apiUrlDinamica || "https://sistema-nfc-monedero-production.up.railway.app";
-
-      // 2. DESTRUCTOR DE CACHÉ: Le agregamos un timestamp (?_nocache=...) para obligar al celular a traer los datos nuevos
-      const res = await axios.get(`${enlaceReal}/pulseras?_nocache=${new Date().getTime()}`); 
-      
-      // 3. Estampamos los datos frescos en tu tabla turquesa
-      if (res.data && Array.isArray(res.data)) {
-        const mapaSaldosUnificados = {};
-
-        // Jalamos el espejo permanente de devoluciones del disco físico del Samsung S25
-        let saldosPermanentesDisco = {};
-        try {
-          saldosPermanentesDisco = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
-        } catch (e) {}
-
-                res.data.forEach(pulsera => {
-          const codigoLimpio = (pulsera.codigo_nfc || pulsera.codigo || '').replace('C-', '').trim().toUpperCase();
-          
-          if (codigoLimpio && codigoLimpio !== "") {
-            if (!mapaSaldosUnificados[codigoLimpio]) {
-              mapaSaldosUnificados[codigoLimpio] = { ...pulsera, codigo_nfc: codigoLimpio, saldo: 0 };
-            }
-            mapaSaldosUnificados[codigoLimpio].saldo += parseFloat(pulsera.saldo || 0);
-          }
-        });
-
-        // 🌟 LA REPARACIÓN DE ORO: Inyectamos los balances unificados en el estado de React para pintar la tabla
-        setPulseras(Object.values(mapaSaldosUnificados));
-      }
-    } catch (err) {
-      console.error("❌ Error al cargar pulseras desde la nube:", err);
-    }
-  };
-
-  // 🍺 FUNCIÓN DE CARGA DE BEBIDAS DINÁMICA ULTRA-BLINDADA PARA AMBOS EVENTOS
-   const cargarProductos = async () => {
-    try {
-      
-      const res = await axios.get(`${apiUrlDinamica}/productos`);
-      if (Array.isArray(res.data)) {
-        setProductos(res.data);
-        console.log("📡 MÓDULO SINCRO: Catálogo de bebidas descargado con éxito desde Vercel gratis.");
-      }
-    } catch (err) {
-      console.error("❌ Error al cargar catálogo de bebidas:", err);
-    }
-  };
-
-      // ➕ FUNCIÓN CORRECTA PARA REGISTRAR EN LA NUBE (ALINEADA AL SERVER.JS)
-  const guardarPulsera = async () => {
-    try {
-      const codigoAEnviar = codigoNfc || pulseraVenta || '';
-
-      if (!codigoAEnviar || codigoAEnviar.trim() === '') {
-        alert('⚠️ Esperando lectura: Por favor, acerca la pulsera NFC al teléfono antes de guardar.');
-        return;
-      }
-
-      // 🌟 UNIFICACIÓN: Mandamos 'tipo_acceso' como texto para que tu backend haga la traducción matemática
-      const res = await axios.post(`${apiUrlDinamica}/pulseras`, {
-        codigo_nfc: codigoAEnviar.trim().toUpperCase(),
-        tipo_acceso: tipoAccesoId, // 🚀 Viaja el texto puro que tu backend necesita para sus condicionales 'if'
-        saldo: parseFloat(saldo) || 0
-      });
-
-      if (res.status === 200 || res.status === 201 || res.data.exito) {
-        setCodigoNfc('');
-        setPulseraVenta('');
-        setTipoAccesoId('');
-        setSaldo('');
-        if (typeof setMostrarModal === 'function') setMostrarModal(false);
-        
-        setTimeout(() => {
-          if (typeof cargarPulseras === 'function') cargarPulseras();
-        }, 800);
-
-        alert('¡Pulsera guardada con éxito en la nube!');
-      }
-    } catch (e) {
-      console.error("Falla al guardar:", e);
-      alert(e.response?.data?.error || 'Error de red al conectar con el servidor de Railway');
-    }
-  };
-
-     const guardarProducto = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(`${apiUrlDinamica}/productos`, { 
-        nombre: nombreProducto, 
-        precio: parseFloat(precioProducto), 
-        stock: parseInt(stockProducto) 
-      });
-      
-      if (res.data.exito) {
-        setNombreProducto(''); 
-        setPrecioProducto(''); 
-        setStockProducto(''); 
-        setMostrarModalProducto(false); 
-        
-        // 🚀 TRUCO DE INGENIERÍA: Le damos 800ms a Neon SQL para guardar antes de recargar el catálogo
-        setTimeout(() => {
-          if (typeof cargarProductos === 'function') cargarProductos();
-        }, 800);
-
-        alert('¡Bebida añadida con éxito!');
-      }
-    } catch (e) { 
-      alert('Error al registrar producto'); 
-    }
-  };
-
-    // ➕ FUNCIÓN MAESTRA CON ACUMULADOR CONSECUTIVO CORREGIDO
-  const agregarAlCarrito = () => {
-    if (!productoSeleccionado) {
-      alert("⚠️ Por favor, seleccione una bebida del catálogo primero.");
-      return;
-    }
-
-    // Buscamos el artículo seleccionado en tu catálogo real de productos
-    const articuloMatch = productos.find(p => String(p.id || p.id_serial) === String(productoSeleccionado));
-    if (!articuloMatch) return;
-
-    // Estructuramos el trago con sus propiedades financieras exactas
-    const nuevoItem = {
-      cart_id: `CART_${new Date().getTime()}_${Math.random().toString(36).substr(2, 5)}`,
-      producto_id: articuloMatch.id || articuloMatch.id_serial,
-      nombre: articuloMatch.nombre,
-      precio: parseFloat(articuloMatch.precio || 0),
-      cantidad: 1 // Aseguramos la base para la multiplicación matemática del backend
-    };
-
-    // 🌟 INYECCIÓN DIRECTA: Forzamos el guardado estrictamente en tu estado real
-    setCarritoVenta(prev => [...(Array.isArray(prev) ? prev : []), nuevoItem]);
-    console.log("🛒 MÓDULO CARRITO: Agregado a 'carritoVenta' de forma acumulativa:", nuevoItem.nombre);
-  };
-
-
-    // 🔒 FUNCIÓN DE ELIMINACIÓN CON FILTRO DE CONTRASEÑA DE ADMINISTRADOR
-  const eliminarDelCarrito = (cartId) => {
-    const claveAccesoAdmin = typeof CONTRASEÑA_ACCESO_SISTEMA !== 'undefined' ? CONTRASEÑA_ACCESO_SISTEMA : "admin29";
+const cargarPulseras = async () => {
+  try { 
+    const enlaceReal = apiUrlDinamica || "https://sistema-nfc-monedero-production.up.railway.app";
+    const res = await axios.get(`${enlaceReal}/pulseras?_nocache=${new Date().getTime()}`); 
     
-    // Lanzamos el recuadro interactivo pidiendo la credencial del supervisor
-    const passwordIngresado = prompt("🔒 AUTORIZACIÓN REQUERIDA:\nPor favor, ingrese la contraseña de Supervisor para remover esta bebida de la orden:");
+    if (res.data && Array.isArray(res.data)) {
+      const mapaSaldosUnificados = {};
 
-    if (passwordIngresado === null) return; // Si cancela con el botón, no hace nada
+      let saldosPermanentesDisco = {};
+      try {
+        saldosPermanentesDisco = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
+      } catch (e) {}
 
-    if (passwordIngresado !== claveAccesoAdmin) {
-      alert("❌ Contraseña incorrecta: Operación denegada. Solo un supervisor autorizado puede modificar el carrito.");
+      res.data.forEach(pulsera => {
+        const codigoLimpio = (pulsera.codigo_nfc || pulsera.codigo || '').replace('C-', '').trim().toUpperCase();
+        
+        if (codigoLimpio && codigoLimpio !== "") {
+          if (!mapaSaldosUnificados[codigoLimpio]) {
+            mapaSaldosUnificados[codigoLimpio] = { ...pulsera, codigo_nfc: codigoLimpio, saldo: 0 };
+          }
+          mapaSaldosUnificados[codigoLimpio].saldo += parseFloat(pulsera.saldo || 0);
+        }
+      });
+
+      setPulseras(Object.values(mapaSaldosUnificados));
+    }
+  } catch (err) {
+    console.error("❌ Error al cargar pulseras desde la nube:", err);
+  }
+};
+
+// 🍺 FUNCIÓN DE CARGA DE BEBIDAS DINÁMICA ULTRA-BLINDADA
+const cargarProductos = async () => {
+  try {
+    const res = await axios.get(`${apiUrlDinamica}/productos`);
+    if (Array.isArray(res.data)) {
+      setProductos(res.data);
+      console.log("📡 MÓDULO SINCRO: Catálogo de bebidas descargado con éxito desde Railway.");
+    }
+  } catch (err) {
+    console.error("❌ Error al cargar catálogo de bebidas:", err);
+  }
+};
+
+// ➕ FUNCIÓN CORRECTA PARA REGISTRAR EN LA NUBE (ALINEADA AL SERVER.JS)
+const guardarPulsera = async () => {
+  try {
+    const codigoAEnviar = codigoNfc || pulseraVenta || '';
+
+    if (!codigoAEnviar || codigoAEnviar.trim() === '') {
+      alert('⚠️ Esperando lectura: Por favor, acerca la pulsera NFC al teléfono antes de guardar.');
       return;
     }
 
-    // 🌟 INYECCIÓN DIRECTA: Forzamos el borrado estrictamente en tu estado real de carritoVenta
-    setCarritoVenta(prev => (Array.isArray(prev) ? prev : []).filter(item => (item.cart_id || item.id) !== cartId));
-    console.log("🔒 SEGURIDAD: Bebida removida del carritoVenta bajo autorización.");
+    // 🌟 TRADUCTOR SALVAVIDAS: Si el selector visual envía un ID viejo (string o número),
+    // lo traducimos al texto exacto que tu nuevo backend procesa con éxito.
+    let accesoTexto = String(tipoAccesoId).trim();
+    if (accesoTexto === '1' || accesoTexto.toLowerCase() === 'general') accesoTexto = 'General';
+    if (accesoTexto === '2' || accesoTexto.toLowerCase() === 'vip') accesoTexto = 'VIP';
+    if (accesoTexto === '3' || accesoTexto.toLowerCase() === 'backstage') accesoTexto = 'Backstage';
+    if (accesoTexto === '4' || accesoTexto.toLowerCase() === 'cortesia' || accesoTexto.toLowerCase() === 'cortesía') accesoTexto = 'Cortesia';
+    if (accesoTexto === '5' || accesoTexto.toLowerCase() === 'staff') accesoTexto = 'Staff';
+
+    // Enviamos la petición unificada a tu servidor de Railway
+    const res = await axios.post(`${apiUrlDinamica}/pulseras`, {
+      codigo_nfc: codigoAEnviar.trim().toUpperCase(),
+      tipo_acceso: accesoTexto, 
+      saldo: parseFloat(saldo) || 0
+    });
+
+    if (res.status === 200 || res.status === 201 || res.data.exito) {
+      setCodigoNfc('');
+      setPulseraVenta('');
+      setTipoAccesoId('');
+      setSaldo('');
+      if (typeof setMostrarModal === 'function') setMostrarModal(false);
+      
+      setTimeout(() => {
+        if (typeof cargarPulseras === 'function') cargarPulseras();
+      }, 800);
+
+      alert('¡Pulsera guardada con éxito en la nube!');
+    }
+  } catch (e) {
+    console.error("Falla al guardar:", e);
+    alert(e.response?.data?.error || 'Error de red al conectar con el servidor de Railway');
+  }
+};
+
+    // ➕ FUNCIÓN PARA GUARDAR PRODUCTO EN RAILWAY
+const guardarProducto = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await axios.post(`${apiUrlDinamica}/productos`, { 
+      nombre: nombreProducto, 
+      precio: parseFloat(precioProducto), 
+      stock: parseInt(stockProducto || 0) 
+    });
+    
+    if (res.data.exito) {
+      setNombreProducto(''); 
+      setPrecioProducto(''); 
+      setStockProducto(''); 
+      setMostrarModalProducto(false); 
+      
+      // 🚀 TRUCO DE INGENIERÍA: Le damos 800ms a Neon SQL para guardar antes de recargar el catálogo
+      setTimeout(() => {
+        if (typeof cargarProductos === 'function') cargarProductos();
+      }, 800);
+
+      alert('¡Bebida añadida con éxito!');
+    }
+  } catch (e) { 
+    alert('Error al registrar producto'); 
+  }
+};
+
+// 🛒 FUNCIÓN MAESTRA CON ACUMULADOR CONSECUTIVO (ALINEADA A TU COLUMNA 'id')
+const agregarAlCarrito = () => {
+  if (!productoSeleccionado) {
+    alert("⚠️ Por favor, seleccione una bebida del catálogo primero.");
+    return;
+  }
+
+  // Buscamos el artículo usando estrictamente la columna 'id' que vimos en tu tabla física
+  const articuloMatch = productos.find(p => String(p.id) === String(productoSeleccionado));
+  if (!articuloMatch) return;
+
+  // Estructuramos el objeto del carrito garantizando que 'producto_id' sea exacto
+  const nuevoItem = {
+    cart_id: `CART_${new Date().getTime()}_${Math.random().toString(36).substr(2, 5)}`,
+    producto_id: parseInt(articuloMatch.id), // Columna real de tu tabla productos
+    nombre: articuloMatch.nombre,
+    precio: parseFloat(articuloMatch.precio || 0),
+    cantidad: 1 
   };
+
+  // Guardamos de forma acumulativa en tu estado real
+  setCarritoVenta(prev => [...(Array.isArray(prev) ? prev : []), nuevoItem]);
+  console.log("🛒 MÓDULO CARRITO: Agregado a 'carritoVenta' de forma acumulativa:", nuevoItem.nombre);
+};
+
+// 🔒 FUNCIÓN DE ELIMINACIÓN CON FILTRO DE CONTRASEÑA DE ADMINISTRADOR
+const eliminarDelCarrito = (cartId) => {
+  const claveAccesoAdmin = typeof CONTRASEÑA_ACCESO_SISTEMA !== 'undefined' ? CONTRASEÑA_ACCESO_SISTEMA : "admin29";
+  
+  // Lanzamos el recuadro interactivo pidiendo la credencial del supervisor
+  const passwordIngresado = prompt("🔒 AUTORIZACIÓN REQUERIDA:\nPor favor, ingrese la contraseña de Supervisor para remover esta bebida de la orden:");
+
+  if (passwordIngresado === null) return; // Si cancela con el botón, no hace nada
+
+  if (passwordIngresado !== claveAccesoAdmin) {
+    alert("❌ Contraseña incorrecta: Operación denegada. Solo un supervisor autorizado puede modificar el carrito.");
+    return;
+  }
+
+  // Forzamos el borrado estrictamente en tu estado real de carritoVenta
+  setCarritoVenta(prev => (Array.isArray(prev) ? prev : []).filter(item => (item.cart_id || item.id) !== cartId));
+  console.log("🔒 SEGURIDAD: Bebida removida del carritoVenta bajo autorización.");
+};
 
   const procesarVenta = async (e) => {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
   
   // Jalamos el ID directamente de la casilla gris de tu pantalla
   const inputFisico = document.querySelector('input[type="text"]');
-    // 🌟 REPARACIÓN DE ORO: Dejamos solo 'pulseraVenta' y removemos las variables fantasma del backend
   const nfcFinal = pulseraVenta || (inputFisico ? inputFisico.value : '');
-
 
   if (!nfcFinal) {
     alert('⚠️ Esperando lectura: Por favor, acerque la pulsera NFC antes de confirmar.');
     return;
   }
   
-  // 🔒 Candado de seguridad: Si el cajero no ha metido nada al carrito, bloqueamos el cobro
+  // Candado de seguridad: Si el cajero no ha metido nada al carrito, bloqueamos el cobro
   if (carritoVenta.length === 0) {
     alert('⚠️ El carrito está vacío. Agregue bebidas antes de confirmar la compra.');
     return;
@@ -279,12 +277,12 @@ function App() {
 
   const idPulseraLimpia = nfcFinal.trim().toUpperCase();
   
-  // 🌟 MATEMÁTICA FINANCIERA: Sumamos el precio de cada tarjeta blanca en tu carrito
+  // Sumamos el precio de cada bebida en tu carrito de forma exacta
   const costoTotalCarrito = carritoVenta.reduce((sum, item) => sum + parseFloat(item.precio || 0), 0);
 
   // 🚀 DETECTOR DE CANAL DE CONTROL
   if (apiUrlDinamica.includes("copia") || apiUrlDinamica.includes("copy")) {
-    // 📶 RUTA A: MODO CONTINGENCIA LOCAL EN EL DISCO DURO (TUS FILAS ORIGINALES DE LA FOTO)
+    // 📶 RUTA A: MODO CONTINGENCIA LOCAL EN EL DISCO DURO
     try {
       const saldosLocalesPermanentes = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
       const saldoPrevio = parseFloat(saldosLocalesPermanentes[idPulseraLimpia] || 0);
@@ -296,7 +294,9 @@ function App() {
       carritoVenta.forEach(item => {
         historialViejo.push({
           id: `LOCAL_${new Date().getTime()}_${Math.random().toString(36).substr(2, 4)}`,
-          codigo_nfc: idPulseraLimpia,
+          pulsera_id: idPulseraLimpia, // 🌟 Alineado con el nombre real de tu columna física de ventas
+          codigo_nfc: idPulseraLimpia,  // Mantenemos compatibilidad con tu lógica local
+          producto_id: item.producto_id, // ID real del producto de la tabla Neon
           producto: item.nombre,
           nombre: item.nombre,
           producto_nombre: item.nombre,
@@ -319,15 +319,13 @@ function App() {
       }
     } catch (errLocal) {
       console.error("Error en cobro local:", errLocal.message);
-    } // 🌟 CIERRA EL TRY LOCAL DE LA LÍNEA 299
+    }
   } else {
-    // 🌐 RUTA B: MODO EN VIVO CONECTADO AL 100% A TU SERVIDOR DE RAILWAY (NUEVO BLINDAJE)
-            // 🌐 RUTA B: MODO EN VIVO CONECTADO AL 100% A TU SERVIDOR DE RAILWAY (NUEVO BLINDAJE)
-        // 🌐 RUTA B: MODO EN VIVO CONECTADO AL 100% A TU SERVIDOR DE RAILWAY (NUEVO BLINDAJE)
+    // 🌐 RUTA B: MODO EN VIVO CONECTADO AL 100% A TU SERVIDOR DE RAILWAY
     try {
-      // 🌟 REPARACIÓN MAESTRA: Traducimos tu 'id' real del payload al 'producto_id' que exige tu backend
+      // 🌟 REPARACIÓN ASIGNADA: Mapeamos con la propiedad 'producto_id' que ya unificamos en el carrito
       const carritoAlineado = carritoVenta.map(item => ({
-        producto_id: item.id || item.id_serial || item.producto_id, // 🚀 Mapea el 34 directo a producto_id
+        producto_id: parseInt(item.producto_id), // Envía de forma limpia el ID numérico
         nombre: item.nombre,
         precio: parseFloat(item.precio || 0),
         cantidad: 1
@@ -351,13 +349,13 @@ function App() {
 
       alert(`🎉 ¡Compra masiva exitosa en Railway! Se descontaron $${costoTotalCarrito.toFixed(2)} por las ${carritoVenta.length} bebidas.`);
       
-      // 🌟 REPARACIÓN DE ORO: Le damos 800ms a Neon Cloud para registrar la resta y jalamos el stock nuevo
+      // Le damos tiempo a Neon Cloud para registrar la transacción y jalamos los balances actualizados
       setTimeout(() => {
         if (typeof cargarProductos === 'function') cargarProductos();
-        if (typeof cargarPulseras === 'function') cargarPulseras(); // De paso refresca los saldos en la otra pestaña
+        if (typeof cargarPulseras === 'function') cargarPulseras(); 
       }, 800);
 
-      // Limpieza exacta de la pantalla tras el cobro exitoso en internet
+      // Limpieza exacta de la pantalla tras el cobro exitoso
       setCarritoVenta([]);
       if (typeof setPulseraVenta === 'function') setPulseraVenta('');
       if (inputFisico) {
@@ -371,48 +369,49 @@ function App() {
   }
 };
 
-  // 🎟️ 2. FUNCIÓN EXCLUSIVA PARA RECARGAR SALDO (TAQUILLA PRINCIPAL ALINEADA CON POST)
-  const manejarRecarga = async (e) => {
-    e.preventDefault();
-    
-    if (!codigoNfc || !saldo) {
-      alert('Por favor, ingresa el código de pulsera y el monto en la taquilla para recargar.');
-      return;
-    }
-    
-    try {
-      // 🌟 UNIFICACIÓN DE RED: Usamos 'POST' para que haga match perfecto con las compuertas de tu server.js
-      const res = await axios.post(`${apiUrlDinamica}/pulseras`, {
-        codigo_nfc: codigoNfc.trim().toUpperCase(),
-        tipo_acceso: 'General', // Mantiene el estándar de tu backend
-        saldo: parseFloat(saldo) // Envía el dinero acumulado directo al ON CONFLICT de Neon
-      });
+  // 🎟️ 2. FUNCIÓN EXCLUSIVA PARA RECARGAR SALDO (TAQUILLA PRINCIPAL CORREGIDA Y SEGURA)
+const manejarRecarga = async (e) => {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
   
-      alert('¡Recarga procesada con éxito en la nube de Neon SQL!');
-      setCodigoNfc(''); 
-      setSaldo('');     
-      if (typeof cargarPulseras === 'function') cargarPulseras(); 
-    } catch (err) {
-      console.error("Error en recarga:", err);
-      alert(err.response?.data?.error || 'Error al intentar procesar la recarga en Railway');
-    }
-  };
+  if (!codigoNfc || !saldo || parseFloat(saldo) <= 0) {
+    alert('Por favor, ingresa el código de pulsera y un monto válido en la taquilla para recargar.');
+    return;
+  }
+  
+  try {
+    // 🌟 REPARACIÓN DE ORO: Usamos 'PUT' apuntando a /pulseras/recargar
+    // Esto suma el dinero directamente en Neon SQL sin destruir el Tipo de Acceso del usuario
+    const res = await axios.put(`${apiUrlDinamica}/pulseras/recargar`, {
+      codigo_nfc: codigoNfc.trim().toUpperCase(),
+      monto: parseFloat(saldo) // Enviamos el monto a sumar
+    });
 
-  // 🌟 SINCRO DE ACCESOS COMPLETA: Blindamos para que admita texto o números de Neon SQL
-  const obtenerTextoAcceso = (id) => {
-    if (!id) return 'General';
-    
-    // Forzamos a que el ID sea un texto limpio sin espacios para que la comparación nunca falle
-    const idLimpio = String(id).trim();
+    alert('¡Recarga procesada con éxito en la nube de Neon SQL!');
+    setCodigoNfc(''); 
+    setSaldo('');     
+    if (typeof cargarPulseras === 'function') cargarPulseras(); 
+  } catch (err) {
+    console.error("Error en recarga:", err);
+    alert(err.response?.data?.error || 'Error al intentar procesar la recarga en Railway. Verifique que la pulsera exista.');
+  }
+};
 
-    if (idLimpio === '2') return 'Staff';   // Alineado con tu server.js (ID 2 = Staff)
-    if (idLimpio === '3') return 'VIP';     // Alineado con tu server.js (ID 3 = VIP)
-    if (idLimpio === '4') return 'General'; // Alineado con tu server.js (ID 4 = General)
-    if (idLimpio === '5') return 'Backstage';
-    if (idLimpio === '6' || idLimpio.toLowerCase() === 'cortesia') return 'Cortesia';
-    
-    return 'General'; // Salvavidas por defecto
-  };
+// 🌟 SINCRO DE ACCESOS COMPLETA: Alineado 100% con la imagen real de tu tabla de Neon
+const obtenerTextoAcceso = (id) => {
+  if (!id) return 'General';
+  
+  // Forzamos a que el ID sea un texto limpio sin espacios
+  const idLimpio = String(id).trim();
+
+  // 📊 Mapeo exacto basado en tu captura de pantalla física:
+  if (idLimpio === '1') return 'General';
+  if (idLimpio === '2') return 'VIP';
+  if (idLimpio === '3') return 'Backstage';
+  if (idLimpio === '4') return 'Cortesia';
+  if (idLimpio === '5') return 'Staff';
+  
+  return 'General'; // Salvavidas por defecto
+};
 
   return (
 

@@ -39,19 +39,27 @@ app.post('/productos', async (req, res) => {
   }
 });
 
-// 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (CORREGIDO CON 'tipo_acceso')
+// 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (CORREGIDO Y AMPLIADO)
+// 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (ALINEADA CON TU TABLA DE ACCESOS REAL)
 app.post('/pulseras', async (req, res) => {
   const { codigo_nfc, tipo_acceso, saldo } = req.body;
   if (!codigo_nfc) {
     return res.status(400).json({ error: "El código NFC es obligatorio" });
   }
   try {
-    // 🌟 Traducimos el texto que viene del formulario a los IDs numéricos de tu foto (4, 3, 2)
-    let idNumericoAcceso = 4; // Por defecto asignamos el ID 4 (General/Cover)
-    if (tipo_acceso === 'VIP') idNumericoAcceso = 3;
-    if (tipo_acceso === 'Staff') idNumericoAcceso = 2;
+    // Convertimos a texto limpio, sin espacios y en minúsculas
+    const accesoLimpio = tipo_acceso ? String(tipo_acceso).trim().toLowerCase() : '';
 
-    // 🚀 Usamos estrictamente tu columna 'tipo_acceso_id' de Neon
+    // 🌟 NUEVOS IDS ALINEADOS 100% CON TU FOTO
+    let idNumericoAcceso = 1; // Por defecto: ID 1 = General
+
+    if (accesoLimpio === 'general' || accesoLimpio === '1') idNumericoAcceso = 1;
+    if (accesoLimpio === 'vip' || accesoLimpio === '2') idNumericoAcceso = 2;
+    if (accesoLimpio === 'backstage' || accesoLimpio === '3') idNumericoAcceso = 3;
+    if (accesoLimpio === 'cortesia' || accesoLimpio === 'cortesía' || accesoLimpio === '4') idNumericoAcceso = 4;
+    if (accesoLimpio === 'staff' || accesoLimpio === '5') idNumericoAcceso = 5;
+
+    // Ejecutamos la consulta en Neon SQL
     await pool.query(
       'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET tipo_acceso_id = $2, saldo = $3',
       [codigo_nfc, idNumericoAcceso, parseFloat(saldo || 0)]
@@ -63,27 +71,26 @@ app.post('/pulseras', async (req, res) => {
   }
 });
 
-// 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO)
+
+// 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO - PROTEGIDO)
 app.put('/pulseras/recargar', async (req, res) => {
   const { codigo_nfc, monto } = req.body;
-  if (!codigo_nfc || !monto) {
-    return res.status(400).json({ error: "Datos incompletos para la recarga" });
+  if (!codigo_nfc || parseFloat(monto) <= 0) {
+    return res.status(400).json({ error: "Datos o monto de recarga inválidos" });
   }
   try {
-    // 🌟 UNIFICACIÓN: Cambiamos 'client.query' por 'pool.query' con letras minúsculas
-    const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    // Sumamos directamente en la base de datos y retornamos el nuevo saldo en un solo paso atómico
+    const resultado = await pool.query(
+      'UPDATE pulseras SET saldo = saldo + $1 WHERE codigo_nfc = $2 RETURNING saldo',
+      [parseFloat(monto), codigo_nfc]
+    );
     
-    if (busqueda.rows.length === 0) {
+    if (resultado.rows.length === 0) {
       return res.status(404).json({ error: "La pulsera no existe" });
     }
     
-    const pulsera = busqueda.rows[0]; // Extraemos el primer registro del arreglo clásico .rows
-    const nuevoSaldo = parseFloat(pulsera.saldo || 0) + parseFloat(monto);
-    
-    // 🌟 UNIFICACIÓN: Actualizamos el saldo real usando pool.query en tu Neon SQL
-    await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
-    
-    res.json({ exito: true, mensaje: `🔋 Recarga exitosa. Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
+    const nuevoSaldo = resultado.rows[0].saldo;
+    res.json({ exito: true, mensaje: `🔋 Recarga exitosa. Nuevo saldo: $${parseFloat(nuevoSaldo).toFixed(2)}` });
   } catch (err) {
     console.error("❌ Error en PUT recargar Railway:", err.message);
     res.status(500).json({ error: err.message });
@@ -97,90 +104,113 @@ app.post('/ventas/multiple', async (req, res) => {
     return res.status(400).json({ error: "Datos incompletos para procesar la venta masiva" });
   }
 
+  const client = await pool.connect();
+
   try {
-    // 🌟 PASO 1: Primero hacemos la búsqueda real en la base de datos (¡Esto faltaba!)
-    const busqueda = await pool.query('SELECT * FROM pulseras WHERE codigo_nfc = $1', [codigo_nfc]);
+    await client.query('BEGIN'); // 🛡️ Iniciamos transacción segura
+
+    // Buscamos el saldo de la pulsera
+    const busqueda = await client.query(
+      'SELECT saldo FROM pulseras WHERE codigo_nfc = $1 FOR UPDATE', 
+      [codigo_nfc]
+    );
+
     if (busqueda.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: "La pulsera aproximada no existe en el sistema" });
     }
 
-    // 🌟 PASO 2: Extraemos de forma segura la primera pulsera del arreglo
-    const pulsera = busqueda.rows[0]; 
+    const saldoActual = parseFloat(busqueda.rows[0].saldo || 0);
     let costoTotal = 0;
 
-    // PASO 3: Calculamos el costo de las bebidas en el carrito
     items.forEach(item => {
-      costoTotal += parseFloat(item.precio) * parseInt(item.cantidad);
+      costoTotal += parseFloat(item.precio || 0) * parseInt(item.cantidad || 1);
     });
 
-    // PASO 4: Validamos el saldo real usando la columna de tu Neon
-    const saldoActual = parseFloat(pulsera.saldo || 0);
-
     if (saldoActual < costoTotal) {
-      return res.status(400).json({ error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${saldoActual.toFixed(2)}` });
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: `Saldo insuficiente. Total orden: $${costoTotal.toFixed(2)}, Saldo disponible: $${saldoActual.toFixed(2)}` 
+      });
     }
 
     const nuevoSaldo = saldoActual - costoTotal;
 
-    // PASO 5: Actualizamos el monedero al milisegundo en tu tabla de Neon SQL
-    await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
+    // Actualizamos el saldo en la tabla pulseras
+    await client.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-        // 🍺 REPARACIÓN DE ORO: Recorremos los ítems vendidos y descontamos las piezas del Stock en Neon SQL
+    // 🍺 Descontamos piezas del stock de productos Y registramos en tu tabla 'ventas' real
     for (const item of items) {
-      await pool.query(
-        'UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2 OR id_serial = $2',
-        [parseInt(item.cantidad || 1), item.producto_id]
+      const idProducto = item.producto_id || item.id;
+      const cantidadVendida = parseInt(item.cantidad || 1);
+      const precioUnitario = parseFloat(item.precio || 0);
+
+      // Descontamos stock usando tu columna física 'id'
+      await client.query(
+        'UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2',
+        [cantidadVendida, idProducto]
       );
+
+      // 🌟 INSERCIÓN ALINEADA: Usamos 'pulsera_id', 'total' y 'producto_id' por cada ítem del carrito
+      for (let i = 0; i < cantidadVendida; i++) {
+        await client.query(
+          'INSERT INTO ventas (pulsera_id, total, producto_id) VALUES ($1, $2, $3)', 
+          [codigo_nfc, precioUnitario, idProducto]
+        );
+      }
     }
 
-        // 🌟 PASO 6: Ahora sí, registramos la bitácora de forma segura usando tus columnas reales de Neon SQL
-    try {
-      // 🚀 Usamos 'total' en lugar de 'monto' para que coincida 100% con tu tabla física
-      await pool.query(
-        'INSERT INTO ventas (codigo_nfc, total) VALUES ($1, $2)', 
-        [codigo_nfc, costoTotal]
-      );
-    } catch (errorBitacora) {
-      console.warn("⚠️ Advertencia en bitácora:", errorBitacora.message);
-    }
-
+    await client.query('COMMIT'); // Todo perfecto, guardamos en Neon
     res.json({ exito: true, mensaje: `🎉 ¡Cobro de $${costoTotal.toFixed(2)} completado con éxito! Nuevo saldo: $${nuevoSaldo.toFixed(2)}` });
 
   } catch (err) {
+    await client.query('ROLLBACK'); // Cancelamos todo si algo truena
     console.error("❌ Error interno crítico en venta múltiple Railway:", err.message);
     res.status(500).json({ error: "Error interno al procesar el cobro múltiple en la nube" });
+  } finally {
+    client.release();
   }
 });
 
-// 🗑️ 5. RUTA: ELIMINAR UNA PULSERA INDIVIDUAL (CORREGIDO SIN CLIENT)
+// 🗑️ 5. RUTA: ELIMINAR UNA PULSERA INDIVIDUAL (CORREGIDA CON 'pulsera_id')
 app.delete('/pulseras/eliminar/:id', async (req, res) => {
   const { id } = req.params;
+  const idLimpio = id ? String(id).trim() : '';
+  
   try {
-    await pool.query('DELETE FROM ventas WHERE pulsera_id = $1', [id]).catch(()=>{});
-    await pool.query('DELETE FROM pulseras WHERE codigo_nfc = $1', [id]);
-    res.json({ exito: true, mensaje: `🗑️ Pulsera ${id} eliminada correctamente.` });
+    // 🛡️ Borramos de ventas usando la columna real 'pulsera_id'
+    await pool.query('DELETE FROM ventas WHERE pulsera_id = $1', [idLimpio]);
+    
+    // Eliminamos la pulsera de la tabla principal
+    const resultado = await pool.query('DELETE FROM pulseras WHERE codigo_nfc = $1', [idLimpio]);
+    
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ error: "La pulsera que intentas eliminar no existe." });
+    }
+    
+    res.json({ exito: true, mensaje: `🗑️ Pulsera ${idLimpio} y su historial fueron eliminados.` });
   } catch (err) {
     console.error("❌ Error en DELETE pulsera:", err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Error de base de datos al eliminar." });
   }
 });
 
-// 🧹 6. RUTA: VACIAR EVENTO COMPLETO
+// 🧹 6. RUTA: VACIAR EVENTO COMPLETO (ORDEN CORRECTO DE BORRADO)
 app.delete('/pulseras/limpiar', async (req, res) => {
   try {
+    // Se debe vaciar primero la tabla dependiente (ventas) y luego la tabla principal (pulseras)
     await pool.query('DELETE FROM ventas;');
     await pool.query('DELETE FROM pulseras;');
-    res.json({ mensaje: '🧹 Evento reiniciado con éxito.' });
+    res.json({ mensaje: '🧹 Evento reiniciado con éxito. Base de datos limpia.' });
   } catch (err) {
     console.error("❌ Error en DELETE limpiar:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-/// 🪙 RUTA EXCLUSIVA: ENVIAR LAS PULSERAS DE NEON A LA PANTALLA (REPARADA CON TU COLUMNA REAL)
+/// 🪙 RUTA EXCLUSIVA: ENVIAR LAS PULSERAS DE NEON A LA PANTALLA
 app.get('/pulseras', async (req, res) => {
   try {
-    // 🚀 Usamos estrictamente 'fecha_registro' que es tu columna real de ordenamiento de tu foto
     const resultado = await pool.query('SELECT * FROM pulseras ORDER BY fecha_registro DESC');
     res.json(resultado.rows);
   } catch (err) {
@@ -200,24 +230,22 @@ app.get('/productos', async (req, res) => {
   }
 });
 
-// 🎟️ RUTA EXCLUSIVA: CONSULTAR HISTORIAL DE VENTAS POR PULSERA (EVITA EL CANNOT GET)
+// 🎟️ RUTA EXCLUSIVA: CONSULTAR HISTORIAL DE VENTAS (CORREGIDA CON 'pulsera_id')
 app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
   const { codigo_nfc } = req.params;
   try {
-    // 🚀 Hacemos la consulta directa a tu tabla de ventas filtrando por la pulsera aproximada
+    // 🚀 Buscamos usando la columna real 'pulsera_id'
     const resultado = await pool.query(
-      'SELECT * FROM ventas WHERE codigo_nfc = $1 ORDER BY id DESC', 
-      [codigo_nfc.trim().toUpperCase()]
+      'SELECT * FROM ventas WHERE pulsera_id ILIKE $1 ORDER BY id DESC', 
+      [codigo_nfc.trim()]
     );
-    // Le regresamos el arreglo de compras limpio a tu frente visual de React
     res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en GET obtener historial de ventas:", err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Error al obtener historial." });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor comercial unificado corriendo en el puerto ${PORT}`);
 });
-
