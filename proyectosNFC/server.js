@@ -63,6 +63,18 @@ app.post('/pulseras', async (req, res) => {
   }
 });
 
+app.get('/pulseras', async (req, res) => {
+  try {
+    // 🚀 Hacemos la consulta directa a tu tabla real de Neon SQL
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id DESC');
+    
+    // Le regresamos la lista de filas limpia a tu tabla de React
+    res.json(resultado.rows);
+  } catch (err) {
+    console.error("❌ Error en GET obtener pulseras:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO)
 app.put('/pulseras/recargar', async (req, res) => {
