@@ -225,10 +225,11 @@ app.get('/pulseras', async (req, res) => {
   }
 });
 
-// 🍹 RUTA EXCLUSIVA: ENVIAR LOS PRODUCTOS DE NEON A TU CATÁLOGO VISUAL
+// 🍹 RUTA EXCLUSIVA: ENVIAR LOS PRODUCTOS DE NEON A TU CATÁLOGO VISUAL (ORDENADO POR ID 1)
 app.get('/productos', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM productos ORDER BY id DESC');
+    // 🌟 REPARACIÓN DE ORO: Cambiamos DESC por ASC para que el ID 1 aparezca siempre arriba
+    const resultado = await pool.query('SELECT * FROM productos ORDER BY id ASC');
     res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en GET obtener productos:", err.message);

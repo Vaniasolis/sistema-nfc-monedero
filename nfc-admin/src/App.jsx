@@ -619,16 +619,21 @@ const obtenerTextoAcceso = (id) => {
       
       {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', backgroundColor: '#e9ecef', padding: '5px', borderRadius: '8px' }}>
-        <button 
-          onClick={() => setPestañaActiva('pulseras')} 
+        <button
+          onClick={() => {
+            setPestañaActiva('pulseras');
+            localStorage.setItem('ultima_pestana_easycashless', 'pulseras');
+          }}
           style={{
             flex: 1, padding: '14px', cursor: 'pointer', fontSize: '16px',
-            backgroundColor: pestañaActiva === 'pulseras' ? '#007bff' : 'transparent', 
-            color: pestañaActiva === 'pulseras' ? 'white' : '#495057', 
+            backgroundColor: pestañaActiva === 'pulseras' ? '#007bff' : 'transparent',
+            color: pestañaActiva === 'pulseras' ? 'white' : '#495057',
             border: 'none', borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s'
           }}
         >
-          🎟️ Pulseras
+          🎟️ Gestión Pulseras
+        </button>
+  
         <button 
           onClick={() => {
             setPestañaActiva('productos');
@@ -645,7 +650,7 @@ const obtenerTextoAcceso = (id) => {
         </button>
       </div>
 
-            {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
+      {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
       {pestañaActiva === 'pulseras' && (
         <div>
           {/* Bloque Gris de Estadísticas */}
