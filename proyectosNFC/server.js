@@ -125,9 +125,21 @@ app.post('/ventas/multiple', async (req, res) => {
     // PASO 5: Actualizamos el monedero al milisegundo en tu tabla de Neon SQL
     await pool.query('UPDATE pulseras SET saldo = $1 WHERE codigo_nfc = $2', [nuevoSaldo, codigo_nfc]);
 
-    // 🌟 PASO 6: Ahora sí, al puro final y con los datos calculados, registramos la bitácora de forma segura
+        // 🍺 REPARACIÓN DE ORO: Recorremos los ítems vendidos y descontamos las piezas del Stock en Neon SQL
+    for (const item of items) {
+      await pool.query(
+        'UPDATE productos SET stock = GREATEST(0, stock - $1) WHERE id = $2 OR id_serial = $2',
+        [parseInt(item.cantidad || 1), item.producto_id]
+      );
+    }
+
+        // 🌟 PASO 6: Ahora sí, registramos la bitácora de forma segura usando tus columnas reales de Neon SQL
     try {
-      await pool.query('INSERT INTO ventas (codigo_nfc, monto) VALUES ($1, $2)', [codigo_nfc, costoTotal]);
+      // 🚀 Usamos 'total' en lugar de 'monto' para que coincida 100% con tu tabla física
+      await pool.query(
+        'INSERT INTO ventas (codigo_nfc, total) VALUES ($1, $2)', 
+        [codigo_nfc, costoTotal]
+      );
     } catch (errorBitacora) {
       console.warn("⚠️ Advertencia en bitácora:", errorBitacora.message);
     }
@@ -184,6 +196,23 @@ app.get('/productos', async (req, res) => {
     res.json(resultado.rows);
   } catch (err) {
     console.error("❌ Error en GET obtener productos:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 🎟️ RUTA EXCLUSIVA: CONSULTAR HISTORIAL DE VENTAS POR PULSERA (EVITA EL CANNOT GET)
+app.get('/ventas/historial/:codigo_nfc', async (req, res) => {
+  const { codigo_nfc } = req.params;
+  try {
+    // 🚀 Hacemos la consulta directa a tu tabla de ventas filtrando por la pulsera aproximada
+    const resultado = await pool.query(
+      'SELECT * FROM ventas WHERE codigo_nfc = $1 ORDER BY id DESC', 
+      [codigo_nfc.trim().toUpperCase()]
+    );
+    // Le regresamos el arreglo de compras limpio a tu frente visual de React
+    res.json(resultado.rows);
+  } catch (err) {
+    console.error("❌ Error en GET obtener historial de ventas:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
