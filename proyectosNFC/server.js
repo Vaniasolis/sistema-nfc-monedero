@@ -195,18 +195,21 @@ app.delete('/pulseras/eliminar/:id', async (req, res) => {
   }
 });
 
-// 🧹 6. RUTA: VACIAR EVENTO COMPLETO (ORDEN CORRECTO DE BORRADO)
+// 🧹 6. RUTA: VACIAR EVENTO COMPLETO (PULSERAS, HISTORIAL Y CATÁLOGO DE BEBIDAS)
 app.delete('/pulseras/limpiar', async (req, res) => {
   try {
-    // Se debe vaciar primero la tabla dependiente (ventas) y luego la tabla principal (pulseras)
-    await pool.query('DELETE FROM ventas;');
-    await pool.query('DELETE FROM pulseras;');
-    res.json({ mensaje: '🧹 Evento reiniciado con éxito. Base de datos limpia.' });
+    // 🛡️ Orden secuencial obligatorio para respetar la integridad referencial de Neon SQL
+    await pool.query('DELETE FROM ventas;');     // 1. Borramos la bitácora dependiente
+    await pool.query('DELETE FROM pulseras;');   // 2. Borramos las carteras Cashless
+    await pool.query('DELETE FROM productos;');  // 🌟 3. ¡NUEVO! Borramos el catálogo completo de bebidas
+    
+    res.json({ exito: true, mensaje: '🧹 Evento reiniciado con éxito. Base de datos vacía al 100%.' });
   } catch (err) {
-    console.error("❌ Error en DELETE limpiar:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Error en DELETE limpiar total Railway:", err.message);
+    res.status(500).json({ error: "Error interno al intentar vaciar las tablas del evento." });
   }
 });
+
 
 /// 🪙 RUTA EXCLUSIVA: ENVIAR LAS PULSERAS DE NEON A LA PANTALLA
 app.get('/pulseras', async (req, res) => {

@@ -39,7 +39,9 @@ function App() {
   };
 
   // 📱 3. TUS ESTADOS (El bloque que me mostraste antes empieza justo aquí)
-  const [pestañaActiva, setPestañaActiva] = useState('pulseras');
+  const [pestañaActiva, setPestañaActiva] = useState(() => {
+  return localStorage.getItem('ultima_pestana_easycashless') || 'pulseras';
+  });
   // Estados de Pulseras
   const [pulseras, setPulseras] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -66,8 +68,9 @@ function App() {
 
       // 🔄 REFRESCADOR UNIVERSAL POR FOCO VISUAL CONTINUO (CON ARRANQUE EN FRÍO INTEGRADO)
   useEffect(() => {
+    
     // 🚀 LA INYECCIÓN DE ORO: Forzamos la carga inmediata en el segundo cero al abrir la aplicación
-    console.log("🚀 EASYCASHLESS: Iniciando aplicación en frío, descargando balances de Railway...");
+    console.log("🚀 EASYCASHLESS: Iniciando aplicación, descargando balances de Railway...");
     if (typeof cargarPulseras === 'function') cargarPulseras();
     if (typeof cargarProductos === 'function') cargarProductos();
 
@@ -94,6 +97,10 @@ function App() {
       document.removeEventListener('visibilitychange', manejarCambioVisibilidad); // 🧼 Limpieza obligatoria de hilos
     };
   }, [apiUrlDinamica]); // 🚀 Se ejecuta al arrancar y cada vez que cambias de Evento en el menú superior
+
+  useEffect(() => {
+  localStorage.setItem('ultima_pestana_easycashless', pestañaActiva);
+  }, [pestañaActiva]);
 
   // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
 const cargarPulseras = async () => {
@@ -669,16 +676,17 @@ const obtenerTextoAcceso = (id) => {
                     <td style={{ fontWeight: '500', padding: '10px 4px', wordBreak: 'break-all', fontSize: '12px' }}>
                       {p.codigo_nfc}
                     </td>
-                    
-                    {/* 2️⃣ CAJÓN ACCESO (Cae bajo el título Acceso) */}
-                    <td style={{ padding: '10px 4px', fontSize: '12px' }}>
-                      {p.tipo_acceso || p.acceso || 'General'}
-                    </td>
-                    
-                    {/* 3️⃣ CAJÓN SALDO (Cae bajo el título Saldo) */}
-                    <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px', fontSize: '13px' }}>
-                      ${p.saldo}
-                    </td>
+
+                  {/* 2️⃣ CAJÓN ACCESO (CORREGIDO CON TU TRADUCTOR DE IDS DE NEON) */}
+                  <td style={{ padding: '10px 4px', fontSize: '12px' }}>
+                    {obtenerTextoAcceso(p.tipo_acceso_id)}
+                  </td>
+
+                  {/* 3️⃣ CAJÓN SALDO (Cae bajo el título Saldo) */}
+                  <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px', fontSize: '13px' }}>
+                    ${parseFloat(p.saldo || 0).toFixed(2)}
+                  </td>
+
                     
                     {/* 4️⃣ CAJÓN ACCIONES (Cae bajo el título Acciones) */}
                     <td style={{ padding: '10px 4px', verticalAlign: 'middle' }}>
@@ -892,131 +900,122 @@ const obtenerTextoAcceso = (id) => {
               </button>
               
               <button 
-                type="button" 
-                onClick={async () => {
-                  // 🪐 AUTO-DETECTOR EN CALIENTE: Localizamos la casilla gris de tu pantalla donde la antena escribe el chip
-                  const inputFisicoNfc = document.querySelector('input[type="text"]');
+              type="button" 
+              onClick={async () => {
+                // 🪐 AUTO-DETECTOR EN CALIENTE
+                const inputFisicoNfc = document.querySelector('input[type="text"]');
+                let codigoPulsera = pulseraVenta || (inputFisicoNfc ? inputFisicoNfc.value : '');
+
+                // 🔒 SALVAVIDAS INTELIGENTE
+                if (!codigoPulsera || !codigoPulsera.trim()) {
+                  codigoPulsera = prompt('Por favor, ingresa o escanea el código de la pulsera para ver su historial de compras:');
+                }
+
+                if (!codigoPulsera || !codigoPulsera.trim()) return;
+
+                const uidLimpio = codigoPulsera.trim().toUpperCase();
+                console.log("MÓDULO HARDWARE: Accediendo al ID de pantalla:", uidLimpio);
+
+                // 🚀 2. BYPASS COMERCIAL PARA EL EVENTO 2 (MODO LOCAL)
+                if (apiUrlDinamica.includes("copia") || apiUrlDinamica.includes("copy")) {
+                  console.log("BYPASS ACTIVO: Sintonizando Evento 2, leyendo de localStorage...");
                   
-                  // Intentamos jalar el ID directamente de la variable de React o del input visual de tu Samsung S25
-                  let codigoPulsera = pulseraVenta || (inputFisicoNfc ? inputFisicoNfc.value : '');
+                  let datosLocales = JSON.parse(localStorage.getItem(`historial_${uidLimpio}`)) || [];
 
-                  // 🔒 SALVAVIDAS INTELIGENTE: El prompt SÓLO se abrirá si la casilla gris de la barra está totalmente vacía
-                  if (!codigoPulsera || !codigoPulsera.trim()) {
-                    codigoPulsera = prompt('Por favor, ingresa o escanea el código de la pulsera para ver su historial de compras:');
-                  }
+                  if (datosLocales.length === 0) {
+                    let precioFallback = 0.00;
+                    let nombreFallback = "Bebida (Evento 2)";
 
-                  if (!codigoPulsera || !codigoPulsera.trim()) return;
-
-                  const uidLimpio = codigoPulsera.trim().toUpperCase();
-                  console.log("MÓDULO HARDWARE: Accediendo de forma directa al ID de pantalla:", uidLimpio);
-
-                  // 🚀 2. BYPASS COMERCIAL PARA EL EVENTO 2 (EVITA EL ERROR DE POSTGRES AL INSTANTE)
-                  if (apiUrlDinamica.includes("copia") || apiUrlDinamica.includes("copy")) {
-                    console.log("BYPASS ACTIVO: Sintonizando Evento 2, leyendo directo de localStorage sin tocar internet...");
-                    
-                    let datosLocales = JSON.parse(localStorage.getItem(`historial_${uidLimpio}`)) || [];
-
-                    // Si la pulsera no registra compras locales en esta sesión, inyectamos una fila adaptativa
-                    if (datosLocales.length === 0) {
-                      let precioFallback = 0.00;
-                      let nombreFallback = "Bebida (Evento 2)";
-
-                      if (productoSeleccionado && productos && productos.length > 0) {
-                        const matchProd = productos.find(p => String(p.id || p.id_serial) === String(productoSeleccionado));
-                        if (matchProd) {
-                          precioFallback = parseFloat(matchProd.precio || 0);
-                          nombreFallback = matchProd.nombre || "Artículo Seleccionado";
-                        }
+                    if (productoSeleccionado && productos && productos.length > 0) {
+                      const matchProd = productos.find(p => String(p.id) === String(productoSeleccionado));
+                      if (matchProd) {
+                        precioFallback = parseFloat(matchProd.precio || 0);
+                        nombreFallback = matchProd.nombre || "Artículo Seleccionado";
                       }
-
-                      datosLocales = [{
-                        id: "FALLBACK",
-                        codigo_nfc: uidLimpio,
-                        producto: nombreFallback,
-                        nombre: nombreFallback,
-                        producto_nombre: nombreFallback,
-                        total: precioFallback,
-                        precio: precioFallback,
-                        precio_venta: precioFallback,
-                        fecha_venta: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        fecha: "Reciente",
-                        created_at: "Reciente"
-                      }];
                     }
 
-                    // Forzamos el render y abrimos el modal en el Evento 2 de inmediato
-                    setHistorialVentas(datosLocales);
-                    setPulseraSeleccionadaHistorial(uidLimpio);
-                    setMostrarModalHistorial(true);
-                    return; // 🛑 Cortamos el flujo aquí con éxito absoluto para el canal de la copia
+                    datosLocales = [{
+                      id: "FALLBACK",
+                      codigo_nfc: uidLimpio,
+                      producto: nombreFallback,
+                      nombre: nombreFallback,
+                      producto_nombre: nombreFallback,
+                      total: precioFallback,
+                      precio: precioFallback,
+                      precio_venta: precioFallback,
+                      fecha_venta: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      fecha: "Reciente",
+                      created_at: "Reciente"
+                    }];
                   }
 
-                  // 📡 3. CANAL NORMAL (EVENTO 1): Consulta tradicional y limpia a Railway
-                  try {
-                    console.log("HISTORIAL CONTABLE: Consultando en el Evento 1:", `${apiUrlDinamica}/ventas/historial/${uidLimpio}`);
+                  setHistorialVentas(datosLocales);
+                  setPulseraSeleccionadaHistorial(uidLimpio);
+                  setMostrarModalHistorial(true);
+                  return; 
+                }
+
+                // 📡 3. CANAL NORMAL (EVENTO 1): Conexión directa a Railway
+                try {
+                  console.log("HISTORIAL CONTABLE: Consultando en el Evento 1:", `${apiUrlDinamica}/ventas/historial/${uidLimpio}`);
+                  
+                  const res = await axios.get(`${apiUrlDinamica}/ventas/historial/${uidLimpio}?_nocache=${new Date().getTime()}`);
+                  
+                  if (!res.data || res.data.length === 0) {
+                    alert('ℹ️ Esta pulsera no tiene ninguna compra registrada en este evento.');
+                    return;
+                  }
+                  
+                  // Mapeador adaptativo unificado con tu columna real 'id'
+                  const datosPurificados = Array.isArray(res.data) ? res.data.map(item => {
+                    const precioDetectado = parseFloat(item.total || item.precio || item.precio_venta || item.monto || 0);
                     
-                    const res = await axios.get(`${apiUrlDinamica}/ventas/historial/${uidLimpio}?_nocache=${new Date().getTime()}`);
-                    
-                    if (!res.data || res.data.length === 0) {
-                      alert('ℹ️ Esta pulsera no tiene ninguna compra registrada en este evento.');
-                      return;
+                    let tiempoFormateado = item.fecha_venta || item.fecha || item.created_at || "Reciente";
+                    if (tiempoFormateado !== "Reciente" && !isNaN(Date.parse(tiempoFormateado))) {
+                      tiempoFormateado = new Date(tiempoFormateado).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     }
+
+                    // Rastreamos el ID del producto barriendo variantes de Postgres
+                    const productoIdVenta = item.producto_id || item.id_producto || item.id || 0;
                     
-                    // Mapeador adaptativo multinivel cruzado por ID y por Precio
-                    const datosPurificados = Array.isArray(res.data) ? res.data.map(item => {
-                      const precioDetectado = parseFloat(item.total || item.precio || item.precio_venta || item.monto || 0);
-                      
-                      let tiempoFormateado = item.fecha_venta || item.fecha || item.created_at || "Reciente";
-                      if (tiempoFormateado !== "Reciente" && !isNaN(Date.parse(tiempoFormateado))) {
-                        tiempoFormateado = new Date(tiempoFormateado).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      }
+                    // 🌟 ALINEACIÓN REAL: Buscamos únicamente usando la propiedad p.id de tu tabla de Neon
+                    const matchCatalogo = productos.find(p => String(p.id) === String(productoIdVenta));
 
-                      // Rastreamos el ID del producto barriendo variantes de Postgres
-                      const productoIdVenta = item.producto_id || item.id_producto || item.id || item.id_serial || item["id serial"] || 0;
-                      
-                      const matchCatalogo = productos.find(p => {
-                        const idCatalogo = p.id || p.id_serial || p["id serial"] || p["ID de serie"] || p.id_de_serie;
-                        return String(idCatalogo) === String(productoIdVenta);
-                      });
+                    // Rastreo de respaldo por precio si no encuentra por ID
+                    const matchPorPrecio = !matchCatalogo ? productos.find(p => parseFloat(p.precio || 0) === precioDetectado) : null;
+                    const objetoFinal = matchCatalogo || matchPorPrecio;
+                    const nombreRealBebida = objetoFinal ? objetoFinal.nombre : (item.producto || item.nombre || "Bebida Consumida");
 
-                      // Rastreo de respaldo por precio
-                      const matchPorPrecio = !matchCatalogo ? productos.find(p => parseFloat(p.precio || 0) === precioDetectado) : null;
-                      const objetoFinal = matchCatalogo || matchPorPrecio;
-                      const nombreRealBebida = objetoFinal ? (objetoFinal.nombre || objetoFinal.nombre_producto) : (item.producto || item.nombre || "Bebida Consumida");
+                    return {
+                      id: item.id || "FALLBACK",
+                      codigo_nfc: item.pulsera_id || item.codigo_nfc || uidLimpio,
+                      producto: nombreRealBebida,
+                      nombre: nombreRealBebida,
+                      producto_nombre: nombreRealBebida,
+                      nombre_producto: nombreRealBebida,
+                      total: precioDetectado, 
+                      precio: precioDetectado,
+                      precio_venta: precioDetectado,
+                      fecha_venta: tiempoFormateado, 
+                      fecha: tiempoFormateado,
+                      created_at: tiempoFormateado
+                    };
+                  }) : [];
 
-                      return {
-                        id: item.id || item.id_serial || "FALLBACK",
-                        codigo_nfc: item.codigo_nfc || item.pulsera_id || item.codigo || uidLimpio,
-                        
-                        producto: nombreRealBebida,
-                        nombre: nombreRealBebida,
-                        producto_nombre: nombreRealBebida,
-                        nombre_producto: nombreRealBebida,
-                        
-                        total: precioDetectado, 
-                        precio: precioDetectado,
-                        precio_venta: precioDetectado,
-                        
-                        fecha_venta: tiempoFormateado, 
-                        fecha: tiempoFormateado,
-                        created_at: tiempoFormateado
-                      };
-                    }) : [];
+                  setHistorialVentas(datosPurificados);
+                  setPulseraSeleccionadaHistorial(uidLimpio);
+                  setMostrarModalHistorial(true);
 
-                    // Guardamos las compras limpias y abrimos el modal en el Evento 1
-                    setHistorialVentas(datosPurificados);
-                    setPulseraSeleccionadaHistorial(uidLimpio);
-                    setMostrarModalHistorial(true);
+                } catch (e) {
+                  console.error("Error al obtener historial en Evento 1:", e);
+                  alert('❌ No se pudo conectar con el servidor para leer el historial.');
+                }
+              }}
+              style={{ width: '100%', padding: '14px', borderRadius: '4px', border: '1px solid #475569', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#ffffff', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+            >
+              🔍 Consultar Saldo NFC
+            </button>
 
-                  } catch (e) {
-                    console.error("Error al obtener historial en Evento 1:", e);
-                    alert('❌ No se pudo conectar con el servidor para leer el historial.');
-                  }
-                }}
-                style={{ width: '100%', padding: '14px', borderRadius: '4px', border: '1px solid #475569', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#ffffff', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
-              >
-                🔍 Consultar Saldo NFC
-              </button>
 
 
             </form>
@@ -1152,122 +1151,125 @@ const obtenerTextoAcceso = (id) => {
           </div>
         </div>
       )}
-       {/* 🖼️ VENTANA MODAL FLOTANTE DE HISTORIAL Y REVERSIÓN QUIRÚRGICA */}
+       {/* 🖼️ VENTANA MODAL FLOTANTE DE HISTORIAL DE CONSULTA (SOLO LECTURA) */}
       {mostrarModalHistorial && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '15px', boxSizing: 'border-box' }}>
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', width: '100%', maxWidth: '450px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ebf0f0', paddingBottom: '10px' }}>
-              <h3 style={{ margin: 0, color: '#111827', fontSize: '16px' }}>📜 Compras de: <strong style={{ color: '#f4f40d' }}>{pulseraSeleccionadaHistorial}</strong></h3>
+              <h3 style={{ margin: 0, color: '#111827', fontSize: '16px' }}>📜 Compras de: <strong style={{ color: '#111827', backgroundColor: '#fef08a', padding: '2px 6px', borderRadius: '4px' }}>{pulseraSeleccionadaHistorial}</strong></h3>
               <button onClick={() => setMostrarModalHistorial(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280', fontWeight: 'bold' }}>✕</button>
             </div>
 
-            <p style={{ margin: 0, fontSize: '13px', color: '#4b5563' }}>Selecciona la bebida que deseas cancelar:</p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#4b5563', fontWeight: '500' }}>Historial de consumos registrados en este dispositivo:</p>
 
             {/* Lista con scroll de artículos comprados */}
-              <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '5px' }}>
+            <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '5px' }}>
               {historialVentas.map((ticket) => (
-                <div key={ticket.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '8px', backgroundColor: '#ffffffab', border: '1px solid #e5e7eb' }}>
+                <div key={ticket.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {/* ✅ CORRECCIÓN MAESTRA: Cambiamos 'item' por 'ticket' para disolver la pantalla blanca */}
                     <span style={{ fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
                       {ticket.producto || ticket.nombre || ticket.producto_nombre || ticket.nombre_producto || ticket.articulo || "Bebida Consumida"}
                     </span>
                     <span style={{ fontSize: '11px', color: '#9ca3af' }}>
-                      {ticket.fecha || ticket.created_at || "Reciente"}
+                      🕒 {ticket.fecha || ticket.created_at || "Reciente"}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {/* ✅ PRECIO BLINDADO: Con respaldos de variables para el Evento 1 y Evento 2 */}
                     <span style={{ fontWeight: 'bold', color: '#dc2626', fontSize: '14px' }}>
                       -${parseFloat(ticket.total || ticket.precio || ticket.precio_venta || 0).toFixed(2)}
                     </span>
                     
-                    {/* Botón de borrado quirúrgico por ID de ticket exacto */}
-                     <button 
-                      type="button"
-                      onClick={async () => {
-                        // 🔐 1. Validación de supervisor original intacta
-                        const claveSuper = prompt('🔒 AUTORIZACIÓN DE BARRA:\nIntroduzca la clave de administrador para deshacer este cobro:');
-                        if (!claveSuper) return;
-                        if (claveSuper !== 'admin29') { alert('❌ Clave incorrecta.'); return; }
+                                        {/* 🛡️ CANDADO DE SEGURIDAD PARA OPERACIÓN: 
+                        El botón solo se dibuja si decides cambiar 'false' por una variable/estado de administrador (ej. esAdmin). 
+                        Al dejarlo en false, queda oculto para los cajeros ordinarios sin borrar tu lógica interna de eventos. */}
+                    {false && (
+                      <button 
+                        type="button"
+                        onClick={async () => {
+                          // 🔐 1. Validación de supervisor original intacta
+                          const claveSuper = prompt('🔒 AUTORIZACIÓN DE BARRA:\nIntroduzca la clave de administrador para deshacer este cobro:');
+                          if (!claveSuper) return;
+                          if (claveSuper !== 'admin29') { alert('❌ Clave incorrecta.'); return; }
 
-                        if (!window.confirm(`¿Confirmas la cancelación de esta compra? Se devolverán $${ticket.total} a la pulsera.`)) return;
+                          if (!window.confirm(`¿Confirmas la cancelación de esta compra? Se devolverán $${ticket.total} a la pulsera.`)) return;
 
-                        // 🪐 2. Amarre del ID de la pulsera activa
-                        const pulseraActiva = ticket.codigo_nfc || pulseraSeleccionadaHistorial || '';
-                        const dineroADevolver = parseFloat(ticket.total || ticket.precio || 0);
+                          // 🪐 2. Amarre del ID de la pulsera activa
+                          const pulseraActiva = ticket.codigo_nfc || pulseraSeleccionadaHistorial || '';
+                          const dineroADevolver = parseFloat(ticket.total || ticket.precio || 0);
 
-                        console.log("REVERSIÓN: Iniciando proceso de persistencia para la pulsera:", pulseraActiva);
+                          console.log("REVERSIÓN: Iniciando proceso de persistencia para la pulsera:", pulseraActiva);
 
-                        // 🚀 3. BYPASS PARA EL EVENTO 2 (REINTEGRO PERSISTENTE EN DISCO FÍSICO)
-                        if (apiUrlDinamica.includes("copia") || apiUrlDinamica.includes("copy") || ticket.id === "FALLBACK") {
-                          console.log("BYPASS ACTIVO: Guardando balance devuelto en el almacenamiento permanente del celular...");
-                          
-                          // A) Actualizamos la vista de la pantalla en caliente
-                          if (typeof setPulseras === 'function') {
-                            setPulseras(prevPulseras => {
-                              return prevPulseras.map(p => {
-                                const idFiel = (p.codigo_nfc || p.codigo || '').trim().toUpperCase();
-                                if (idFiel === pulseraActiva.trim().toUpperCase()) {
-                                  return { ...p, saldo: parseFloat(p.saldo || 0) + dineroADevolver };
-                                }
-                                return p;
-                              });
-                            });
-                          }
-
-                          // B) 🌟 ANCLA DE SEGURIDAD INTERNA: Guardamos el saldo de contingencia en el disco duro para que no se borre al salir
-                          try {
-                            const saldosLocalesPermanentes = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
-                            const saldoPrevioGuardado = parseFloat(saldosLocalesPermanentes[pulseraActiva.trim().toUpperCase()] || 0);
+                          // 🚀 3. BYPASS PARA EL EVENTO 2 (REINTEGRO PERSISTENTE EN DISCO FÍSICO)
+                          if (apiUrlDinamica.includes("copia") || apiUrlDinamica.includes("copy") || ticket.id === "FALLBACK") {
+                            console.log("BYPASS ACTIVO: Guardando balance devuelto en el almacenamiento permanente del celular...");
                             
-                            // Acumulamos de forma permanente el dinero devuelto en el almacenamiento físico del teléfono
-                            saldosLocalesPermanentes[pulseraActiva.trim().toUpperCase()] = saldoPrevioGuardado + dineroADevolver;
-                            localStorage.setItem('saldos_contingencia_evento2', JSON.stringify(saldosLocalesPermanentes));
-                            console.log("💾 DISCO DURO: Reembolso asegurado en almacenamiento permanente.");
-                          } catch (errDisco) {
-                            console.error("Error al escribir espejo persistente:", errDisco);
+                            // A) Actualizamos la vista de la pantalla en caliente
+                            if (typeof setPulseras === 'function') {
+                              setPulseras(prevPulseras => {
+                                return prevPulseras.map(p => {
+                                  const idFiel = (p.codigo_nfc || p.codigo || '').trim().toUpperCase();
+                                  if (idFiel === pulseraActiva.trim().toUpperCase()) {
+                                    return { ...p, saldo: parseFloat(p.saldo || 0) + dineroADevolver };
+                                  }
+                                  return p;
+                                });
+                              });
+                            }
+
+                            // B) 🌟 ANCLA DE SEGURIDAD INTERNA: Guardamos el saldo de contingencia en el disco duro para que no se borre al salir
+                            try {
+                              const saldosLocalesPermanentes = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
+                              const saldoPrevioGuardado = parseFloat(saldosLocalesPermanentes[pulseraActiva.trim().toUpperCase()] || 0);
+                              
+                              // Acumulamos de forma permanente el dinero devuelto en el almacenamiento físico del teléfono
+                              saldosLocalesPermanentes[pulseraActiva.trim().toUpperCase()] = saldoPrevioGuardado + dineroADevolver;
+                              localStorage.setItem('saldos_contingencia_evento2', JSON.stringify(saldosLocalesPermanentes));
+                              console.log("💾 DISCO DURO: Reembolso asegurado en almacenamiento permanente.");
+                            } catch (errDisco) {
+                              console.error("Error al escribir espejo persistente:", errDisco);
+                            }
+
+                            // Limpiamos la caché del historial local para borrar la bebida de la ventana modal
+                            try {
+                              let historialCaché = JSON.parse(localStorage.getItem(`historial_${pulseraActiva.trim().toUpperCase()}`)) || [];
+                              historialCaché = historialCaché.filter(t => t.id !== ticket.id);
+                              localStorage.setItem(`historial_${pulseraActiva.trim().toUpperCase()}`, JSON.stringify(historialCaché));
+                              if (typeof setHistorialVentas === 'function') setHistorialVentas(historialCaché);
+                            } catch (eLoc) {}
+
+                            alert(`✅ ¡Cancelación Exitosa! Se reintegraron $${dineroADevolver.toFixed(2)} directamente al saldo de la pulsera de forma permanente.`);
+                            if (typeof setMostrarModalHistorial === 'function') setMostrarModalHistorial(false);
+                            return; 
                           }
 
-                          // Limpiamos la caché del historial local para borrar la bebida de la ventana modal
+                          // 📡 4. CANAL NORMAL (EVENTO 1): Reversión nativa en la nube de Railway
                           try {
-                            let historialCaché = JSON.parse(localStorage.getItem(`historial_${pulseraActiva.trim().toUpperCase()}`)) || [];
-                            historialCaché = historialCaché.filter(t => t.id !== ticket.id);
-                            localStorage.setItem(`historial_${pulseraActiva.trim().toUpperCase()}`, JSON.stringify(historialCaché));
-                            if (typeof setHistorialVentas === 'function') setHistorialVentas(historialCaché);
-                          } catch (eLoc) {}
+                            const res = await axios.post(`${apiUrlDinamica}/ventas/revertir`, { 
+                              venta_id: ticket.id,
+                              codigo_nfc: pulseraActiva
+                            });
+                            
+                            alert(res.data.mensaje || '¡Reversión completada!');
+                            if (typeof setMostrarModalHistorial === 'function') setMostrarModalHistorial(false); 
+                            
+                            // 🚀 EL CAMBIO DE ORO: Le damos 1000ms (1 segundo completo) a Neon Cloud en Railway
+                            // para que asiente de forma indestructible el dinero en la nube antes de recargar la pantalla
+                            setTimeout(() => {
+                              if (typeof cargarPulseras === 'function') cargarPulseras(); 
+                            }, 1000); // 🌟 Cambiamos de 300 a 1000 para blindar la latencia de internet
 
-                          alert(`✅ ¡Cancelación Exitosa! Se reintegraron $${dineroADevolver.toFixed(2)} directamente al saldo de la pulsera de forma permanente.`);
-                          if (typeof setMostrarModalHistorial === 'function') setMostrarModalHistorial(false);
-                          return; 
-                        }
+                          } catch (err) {
+                            console.error("⚠️ Error de internet en Evento 1:", err);
+                            alert(err.response?.data?.error || 'No se pudo procesar la cancelación.');
+                          }
+                        }}
+                        style={{ padding: '6px 10px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}
+                      >
+                        ↩️ Cancelar
+                      </button>
+                    )}
 
-                        // 📡 4. CANAL NORMAL (EVENTO 1): Reversión nativa en la nube de Railway
-                        try {
-                          const res = await axios.post(`${apiUrlDinamica}/ventas/revertir`, { 
-                            venta_id: ticket.id,
-                            codigo_nfc: pulseraActiva
-                          });
-                          
-                          alert(res.data.mensaje || '¡Reversión completada!');
-                          if (typeof setMostrarModalHistorial === 'function') setMostrarModalHistorial(false); 
-                          
-                          // 🚀 EL CAMBIO DE ORO: Le damos 1000ms (1 segundo completo) a Neon Cloud en Railway
-                          // para que asiente de forma indestructible el dinero en la nube antes de recargar la pantalla
-                          setTimeout(() => {
-                            if (typeof cargarPulseras === 'function') cargarPulseras(); 
-                          }, 1000); // 🌟 Cambiamos de 300 a 1000 para blindar la latencia de internet
-
-                        } catch (err) {
-                          console.error("⚠️ Error de internet en Evento 1:", err);
-                          alert(err.response?.data?.error || 'No se pudo procesar la cancelación.');
-                        }
-                      }}
-                      style={{ padding: '6px 10px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}
-                    >
-                      ↩️ Cancelar
-                    </button>
 
                   </div>
                 </div>
