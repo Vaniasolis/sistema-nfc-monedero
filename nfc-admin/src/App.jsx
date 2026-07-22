@@ -162,7 +162,7 @@ function App() {
       // 🌟 UNIFICACIÓN: Mandamos 'tipo_acceso' como texto para que tu backend haga la traducción matemática
       const res = await axios.post(`${apiUrlDinamica}/pulseras`, {
         codigo_nfc: codigoAEnviar.trim().toUpperCase(),
-        tipo_acceso: tipoAccesoId, // Pasa el texto ('VIP', 'Staff', etc.) directo al server
+        tipo_acceso: tipoAccesoId, // 🚀 Viaja el texto puro que tu backend necesita para sus condicionales 'if'
         saldo: parseFloat(saldo) || 0
       });
 
