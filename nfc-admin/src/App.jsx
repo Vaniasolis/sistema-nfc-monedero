@@ -398,15 +398,18 @@ function App() {
     }
   };
 
-  // 🌟 SINCRO DE ACCESOS: Alineamos las etiquetas con los IDs reales de tu server.js (4, 3, 2)
+  // 🌟 SINCRO DE ACCESOS COMPLETA: Blindamos para que admita texto o números de Neon SQL
   const obtenerTextoAcceso = (id) => {
-    const idNum = parseInt(id);
-    if (idNum === 2) return 'Staff'; 
-    if (idNum === 3) return 'VIP'; 
-    if (idNum === 4) return 'General/Cover'; 
-    if (idNum === 5) return 'Backstage'; 
-    if (idNum === 6) return 'Cortesia'; 
-    return 'General';
+    if (!id) return 'General';
+    
+    const idLimpio = String(id).trim().toLowerCase();
+
+    if (idLimpio === '2' || idLimpio === 'staff') return 'Staff'; 
+    if (idLimpio === '3' || idLimpio === 'vip') return 'VIP'; 
+    if (idLimpio === '5' || idLimpio === 'backstage') return 'Backstage'; 
+    if (idLimpio === '6' || idLimpio === 'cortesia' || idLimpio === 'cocortesia') return 'Cortesia'; 
+    
+    return 'General'; // Cover y General caen aquí por defecto
   };
 
   return (
