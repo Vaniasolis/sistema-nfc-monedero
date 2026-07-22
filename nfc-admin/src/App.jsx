@@ -98,10 +98,6 @@ function App() {
     };
   }, [apiUrlDinamica]); // 🚀 Se ejecuta al arrancar y cada vez que cambias de Evento en el menú superior
 
-  useEffect(() => {
-  localStorage.setItem('ultima_pestana_easycashless', pestañaActiva);
-  }, [pestañaActiva]);
-
   // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
 const cargarPulseras = async () => {
   try { 
@@ -633,8 +629,11 @@ const obtenerTextoAcceso = (id) => {
           }}
         >
           🎟️ Pulseras
-        </button>
-        <button onClick={() => setPestañaActiva('productos')} 
+        <button 
+          onClick={() => {
+            setPestañaActiva('productos');
+            localStorage.setItem('ultima_pestana_easycashless', 'productos');
+          }} 
           style={{
             flex: 1, padding: '14px', cursor: 'pointer', fontSize: '16px',
             backgroundColor: pestañaActiva === 'productos' ? '#007bff' : 'transparent', 
