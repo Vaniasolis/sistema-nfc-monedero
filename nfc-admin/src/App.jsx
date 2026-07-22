@@ -1089,26 +1089,28 @@ function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontWeight: 'bold', color: '#495057' }}>Tipo de Acceso:</label>
                 {/* ✅ VERSIÓN REPARADA, ESTABLE Y COMPATIBLE CON TU CÓDIGO */}
-                <select 
-          value={typeof tipoAccesoId !== 'undefined' ? tipoAccesoId : (typeof tipo_acceso_id !== 'undefined' ? tipo_acceso_id : '')} 
+                        <select 
+          id="tipoAccesoId"
+          name="tipoAccesoId"
+          value={typeof tipoAccesoId !== 'undefined' ? tipoAccesoId : ''} 
           onChange={(e) => {
-            // Convertimos a número entero de inmediato para que nunca viaje un NaN a internet
-            const valorNumerico = parseInt(e.target.value) || 1; 
+            // 🌟 REPARACIÓN DE ORO: Dejamos el texto puro ('VIP', 'Staff') sin volverlo número
+            const valorTexto = e.target.value; 
             if (typeof setTipoAccesoId === 'function') {
-              setTipoAccesoId(valorNumerico);
+              setTipoAccesoId(valorTexto);
             } else if (typeof setTipoAcceso === 'function') {
-              setTipoAcceso(valorNumerico);
+              setTipoAcceso(valorTexto);
             }
           }}
           style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#fff', color: '#334155', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 'bold', display: 'block', marginTop: '5px' }}
         >
-          <option value="1">-- Seleccione un acceso (Por defecto: General) --</option>
-          <option value="1">General</option>
-          <option value="2">VIP</option>
-          <option value="3">Cover</option>
-          <option value="4">Backstage</option>
-          <option value="5">Cortesia</option>
+          <option value="">-- Seleccione un acceso (Por defecto: General) --</option>
+          <option value="General">General</option>
+          <option value="VIP">VIP</option>
+          <option value="Staff">Staff</option>
+          <option value="Cortesia">Cortesia</option>
         </select>
+
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <label style={{ fontWeight: 'bold', color: '#495057' }}>Saldo Inicial ($):</label>
