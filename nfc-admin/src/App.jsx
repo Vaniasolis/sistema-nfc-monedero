@@ -402,14 +402,16 @@ function App() {
   const obtenerTextoAcceso = (id) => {
     if (!id) return 'General';
     
-    const idLimpio = String(id).trim().toLowerCase();
+    // Forzamos a que el ID sea un texto limpio sin espacios para que la comparación nunca falle
+    const idLimpio = String(id).trim();
 
-    if (idLimpio === '2' || idLimpio === 'staff') return 'Staff'; 
-    if (idLimpio === '3' || idLimpio === 'vip') return 'VIP'; 
-    if (idLimpio === '5' || idLimpio === 'backstage') return 'Backstage'; 
-    if (idLimpio === '6' || idLimpio === 'cortesia' || idLimpio === 'cocortesia') return 'Cortesia'; 
+    if (idLimpio === '2') return 'Staff';   // Alineado con tu server.js (ID 2 = Staff)
+    if (idLimpio === '3') return 'VIP';     // Alineado con tu server.js (ID 3 = VIP)
+    if (idLimpio === '4') return 'General'; // Alineado con tu server.js (ID 4 = General)
+    if (idLimpio === '5') return 'Backstage';
+    if (idLimpio === '6' || idLimpio.toLowerCase() === 'cortesia') return 'Cortesia';
     
-    return 'General'; // Cover y General caen aquí por defecto
+    return 'General'; // Salvavidas por defecto
   };
 
   return (
