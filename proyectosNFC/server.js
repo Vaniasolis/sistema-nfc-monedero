@@ -63,19 +63,6 @@ app.post('/pulseras', async (req, res) => {
   }
 });
 
-app.get('/pulseras', async (req, res) => {
-  try {
-    // 🚀 Hacemos la consulta directa a tu tabla real de Neon SQL
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY id DESC');
-    
-    // Le regresamos la lista de filas limpia a tu tabla de React
-    res.json(resultado.rows);
-  } catch (err) {
-    console.error("❌ Error en GET obtener pulseras:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO)
 app.put('/pulseras/recargar', async (req, res) => {
   const { codigo_nfc, monto } = req.body;
@@ -103,7 +90,7 @@ app.put('/pulseras/recargar', async (req, res) => {
   }
 });
 
-/// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE INDESTRUCTIBLE)
+// 🍹 3. RUTA: PROCESAR COBRO MÚLTIPLE DESDE EL CARRITO (BOTÓN VERDE INDESTRUCTIBLE)
 app.post('/ventas/multiple', async (req, res) => {
   const { codigo_nfc, items } = req.body;
   if (!codigo_nfc || !items || items.length === 0) {
@@ -174,6 +161,29 @@ app.delete('/pulseras/limpiar', async (req, res) => {
     res.json({ mensaje: '🧹 Evento reiniciado con éxito.' });
   } catch (err) {
     console.error("❌ Error en DELETE limpiar:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/// 🪙 RUTA EXCLUSIVA: ENVIAR LAS PULSERAS DE NEON A LA PANTALLA (REPARADA CON TU COLUMNA REAL)
+app.get('/pulseras', async (req, res) => {
+  try {
+    // 🚀 Usamos estrictamente 'fecha_registro' que es tu columna real de ordenamiento de tu foto
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY fecha_registro DESC');
+    res.json(resultado.rows);
+  } catch (err) {
+    console.error("❌ Error en GET obtener pulseras:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 🍹 RUTA EXCLUSIVA: ENVIAR LOS PRODUCTOS DE NEON A TU CATÁLOGO VISUAL
+app.get('/productos', async (req, res) => {
+  try {
+    const resultado = await pool.query('SELECT * FROM productos ORDER BY id DESC');
+    res.json(resultado.rows);
+  } catch (err) {
+    console.error("❌ Error en GET obtener productos:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
