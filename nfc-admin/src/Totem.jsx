@@ -3,8 +3,8 @@ import axios from 'axios';
 
 export default function Totem({ alSalir }) {
   // 📡 TU SERVIDOR REAL DE PRODUCTION EN VIVO
-  // 📡 TU ENLACE DE PRODUCCIÓN REAL (Indestructible y sin comillas invertidas)
-const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.app");
+  // ⚠️ RECUERDA: Cambia esto por tu URL de Railway real (ej: https://tu-backend.up.railway.app)
+  const [apiUrl] = useState("https://railway.app");
   
   const [uidFiltro, setUidFiltro] = useState('');
   const [pulseraInfo, setPulseraInfo] = useState(null);
@@ -14,55 +14,72 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
   const inputRef = useRef(null);
   const timerRef = useRef(null);
 
+  // 👁️ EL VIGILANTE AUTOMÁTICO: Revisa la casilla continuamente para no usar el dedo
   useEffect(() => {
-    if (window.Capacitor) {
-      const { NFC } = window.Capacitor.Plugins;
-      if (NFC) {
-        NFC.addListener('nfcTagScanned', (datosTag) => {
-          const idFisico = datosTag.id || datosTag.uid;
-          if (idFisico) {
-            const uidLimpio = idFisico.replace(/:/g, '').toUpperCase();
-            consultarDatosTotem(uidLimpio);
-          }
-        });
+    const revisarCasillaEnCaliente = () => {
+      if (inputRef.current) {
+        const textoInyectado = inputRef.current.value.trim().toUpperCase();
+        
+        // Si el lector ya escribió las 20 letras con puntos y la pantalla sigue en espera
+        if (textoInyectado.length >= 20 && !pulseraInfo && !cargando) {
+          console.log("👁️ El Vigilante detectó el ID inyectado:", textoInyectado);
+          
+          // Sincronizamos el estado visual de React
+          setUidFiltro(textoInyectado);
+          
+          // Lanzamos la consulta directa a Railway automáticamente
+          consultarDatosTotem(textoInyectado);
+        }
       }
-    }
+    };
 
+    // Revisa la casilla cada 400 milisegundos de forma silenciosa
+    const intervaloVigilante = setInterval(revisarCasillaEnCaliente, 400);
+
+    return () => clearInterval(intervaloVigilante); // Limpieza de hilos al salir
+  }, [pulseraInfo, cargando]);
+
+  // 🔒 CORRECCIÓN 1: Se restauró el useEffect que estaba roto y colgado aquí
+  useEffect(() => {
     const forzarEnfoque = () => { if (inputRef.current) inputRef.current.focus(); };
+    
     forzarEnfoque();
     window.addEventListener('click', forzarEnfoque);
+    
     return () => {
       window.removeEventListener('click', forzarEnfoque);
+      if (window.Capacitor && window.Capacitor.Plugins) {
+        const { NFC } = window.Capacitor.Plugins;
+        if (NFC) NFC.removeAllListeners();
+      }
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
 
-  // ⏱️ TEMPORIZADOR DE AUTO-CIERRE PURIFICADO CONTRA ALERTAS FANTASMA
-    const iniciarTemporizadorRegreso = () => {
+  const iniciarTemporizadorRegreso = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       setPulseraInfo(null);
-      // 🌟 SOLUCIÓN: Eliminamos la línea de setHistorial que causaba el quiebre
-      setUidFiltro(''); 
+      setUidFiltro('');
       setMensajeEspera('👋 ACERCA TU PULSERA PARA CONSULTAR');
-    }, 8000);
+    }, 8000); // 8 segundos de privacidad
   };
-
 
   const consultarDatosTotem = async (uid) => {
     if (!uid || !uid.trim()) return;
-    const uidLimpio = uid.trim().toUpperCase().replace('C-', '');
+    const uidLimpio = uid.trim().toUpperCase();
     
     setCargando(true);
     setMensajeEspera('🔍 Buscando datos en la nube...');
     if (timerRef.current) clearTimeout(timerRef.current);
 
     try {
-      // 🌟 CONSULTA DE PULSERAS CONECTADA A TU ENLACE REAL Y DINÁMICO
-      const resPulseras = await axios.get(`${apiUrl}/pulseras`);
+      // Consulta directa a tu servidor de Railway
+      const resPulseras = await axios.get(`${apiUrl}/pulseras?_nocache=${new Date().getTime()}`);
       
       const pulseraMatch = resPulseras.data.find(p => 
-        (p.codigo_nfc || p.codigo || '').replace('C-', '').trim().toUpperCase() === uidLimpio
+        (p.codigo_nfc || p.codigo || '').trim().toUpperCase() === uidLinter || 
+        (p.codigo_nfc || p.codigo || '').trim().toUpperCase() === uidLimpio
       );
 
       if (!pulseraMatch) {
@@ -79,7 +96,7 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
       iniciarTemporizadorRegreso();
 
     } catch (err) {
-      console.error("Error en consulta del Tótem:", err);
+      console.error("Error en consulta:", err);
       setMensajeEspera('❌ Error de conexión con el servidor.');
       setCargando(false);
       setUidFiltro('');
@@ -87,9 +104,14 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
     }
   };
 
-  const manejarSubmitTeclado = (e) => {
-    if (e.key === 'Enter') {
-      consultarDatosTotem(uidFiltro);
+  // 🌟 CORRECCIÓN 2: Se agregó la función que le hacía falta al Formulario para procesar el "Enter" del Tótem
+  const handleSubmitFormulario = (e) => {
+    e.preventDefault();
+    if (inputRef.current) {
+      const valorRealForm = inputRef.current.value.trim().toUpperCase();
+      if (valorRealForm === '') return;
+      console.log("📝 Formulario enviado con código:", valorRealForm);
+      consultarDatosTotem(valorRealForm);
     }
   };
 
@@ -105,17 +127,33 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
           <div style={{ fontSize: '80px' }}>💳</div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', maxWidth: '350px', lineHeight: '1.4' }}>{mensajeEspera}</h1>
           
+          {/* 💻 CASILLA DE CONSULTA UNIFICADA (Celular y Laptop) */}
           <div style={{ marginTop: '15px' }}>
-            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '5px' }}>[Modo Laptop: Teclea el ID de la pulsera y presiona Enter para simular]</p>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Ej: NFC001"
-              value={uidFiltro}
-              onChange={(e) => setUidFiltro(e.target.value)}
-              onKeyDown={manejarSubmitTeclado}
-              style={{ backgroundColor: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '10px 15px', borderRadius: '8px', fontSize: '16px', textAlign: 'center', outline: 'none', width: '200px', fontWeight: 'bold' }}
-            />
+            <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '5px' }}>
+              [Acerque su ficha o presione Enter al completarse el código]
+            </p>
+            <form onSubmit={handleSubmitFormulario}>
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Ej: 04:B3:4F..."
+                value={uidFiltro}
+                onChange={(e) => setUidFiltro(e.target.value)}
+                autoFocus
+                style={{ 
+                  backgroundColor: '#1e293b', 
+                  color: '#38bdf8', 
+                  border: '1px solid #334155', 
+                  padding: '10px 15px', 
+                  borderRadius: '8px', 
+                  fontSize: '16px', 
+                  textAlign: 'center', 
+                  outline: 'none', 
+                  width: '280px', 
+                  fontWeight: 'bold' 
+                }}
+              />
+            </form>
           </div>
         </div>
       )}
@@ -132,6 +170,10 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
             <div style={{ fontSize: '60px', fontWeight: '900', marginTop: '10px', color: '#ffffff' }}>
               ${parseFloat(pulseraInfo.saldo || 0).toFixed(2)}
             </div>
+          </div>
+
+          <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', paddingBottom: '10px', marginTop: '20px' }}>
+            La pantalla se limpiará automáticamente en unos segundos...
           </div>
         </div>
       )}
