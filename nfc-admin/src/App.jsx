@@ -23,20 +23,33 @@ function App() {
   // 🛒 ESTADO PARA EL CARRITO DE COMPRAS EN BARRA
   const [carritoVenta, setCarritoVenta] = useState([]);
    
-  // 🧠 2. FUNCIÓN DE CAMBIO DE CANAL (Ahora sí va adentro de App y puede usar setApiUrlDinamica)
-  const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
-    const claveIntroducida = prompt('🔒 Introduzca el código maestro de administrador para cambiar de evento:');
+  // 🧠 2. FUNCIÓN DE CAMBIO DE CANAL DE EVENTO (CORREGIDA Y COMPILABLE)
+const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
+  const claveIntroducida = prompt('🔒 Introduzca el código maestro de administrador para cambiar de evento:');
+  
+  if (claveIntroducida === 'admin29') {
+    // 🌟 REPARACIÓN DE ORO: Forzamos el cambio en el estado de React
+    setApiUrlDinamica(nuevoEnlace);
     
-    if (claveIntroducida === 'admin29') {
-      setApiUrlDinamica(nuevoEnlace);
-      alert('✅ Código correcto. Sintonizando nuevo canal de evento en la nube...');
-    } else {
-      alert('❌ Código incorrecto. Acceso denegado.');
-      if (elementoSelect) {
-        elementoSelect.value = apiUrlDinamica;
-      }
+    // Guardamos permanentemente el enlace activo en el disco para que no se pierda el canal
+    localStorage.setItem('enlace_activo_easycashless', nuevoEnlace);
+    
+    alert('✅ Código correcto. Sintonizando nuevo canal de evento en la nube...');
+
+    // 🚀 INYECCIÓN COMERCIAL: Ejecutamos manualmente la recarga pasándole el enlace fresco
+    // Esto fuerza a que se active el bypass del local u cambien los productos en el acto
+    setTimeout(() => {
+      if (typeof cargarPulseras === 'function') cargarPulseras();
+      if (typeof cargarProductos === 'function') cargarProductos();
+    }, 200);
+
+  } else {
+    alert('❌ Código incorrecto. Acceso denegado.');
+    if (elementoSelect) {
+      elementoSelect.value = apiUrlDinamica; // Regresa el select a su posición original
     }
-  };
+  }
+};
 
   // 📱 3. TUS ESTADOS (El bloque que me mostraste antes empieza justo aquí)
   const [pestañaActiva, setPestañaActiva] = useState(() => {
@@ -601,7 +614,7 @@ const obtenerTextoAcceso = (id) => {
       // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
     <div style={{ padding: '15px', paddingTop: '35px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
       
-      {/* 🎛️ SELECTOR DE CANAL INTELIGENTE MULTI-EVENTO CORREGIDO CON TUS ENLACES REALES */}
+            {/* 🎛️ SELECTOR DE CANAL INTELIGENTE MULTI-EVENTO (BLINDADO CON HTTPS) */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', backgroundColor: '#1e293b', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #334155' }}>
         <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>CANAL:</label>
         <select 
@@ -609,11 +622,11 @@ const obtenerTextoAcceso = (id) => {
           onChange={(e) => cambiarCanalEvento(e.target.value, e.target)}
           style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
         >
-        {/* 🌟 Canal 1: Tu nuevo servidor unificado en Railway */}
+          {/* 🌟 Canal 1: Tu nuevo servidor unificado en Railway */}
           <option value="https://sistema-nfc-monedero-production.up.railway.app">🎟️ Evento 1 (Railway Producción)</option>
           
-          {/* 🌟 Canal 2: Apunta también a tu subdominio real */}
-          <option value="https://sistema-nfc-monedero-production.up.railway.app">🎵 Evento 2 (Railway Respaldo)</option>
+          {/* 🌟 Canal 2: CORREGIDO CON HTTPS SEGURO */}
+          <option value="https://sistema-nfc-monedero-copy-1-production.up.railway.app">🎵 Evento 2 (Railway Respaldo)</option>
         </select>
       </div>
       
