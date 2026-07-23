@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { useNfcRadar } from './hooks/useNfcRadar';
+import Totem from './Totem';
 
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
   const [estaAutenticado, setEstaAutenticado] = useState(false);
   const [contraseñaIngresada, setContraseñaIngresada] = useState('');
   const [errorContraseña, setErrorContraseña] = useState('');
+  const [activarModoTotem, setActivarModoTotem] = useState(false);
 
   // La contraseña oficial que me pida el cliente (la puedes cambiar cuando quieras)
   const CONTRASEÑA_ACCESO_SISTEMA = "admin29"; 
@@ -430,8 +432,11 @@ const obtenerTextoAcceso = (id) => {
 };
 
   return (
-
-    
+    activarModoTotem ? (
+      // Pasamos una función para que si deseas salir del Tótem puedas regresar al menú de cajeros
+      <Totem alSalir={() => setActivarModoTotem(false)} />
+    ) : (
+      
         mostrarBienvenida ? (
         <div style={{ 
           width: '100vw', 
@@ -661,7 +666,22 @@ const obtenerTextoAcceso = (id) => {
         >
           🍺 Punto de Venta
         </button>
+
+        {/* 🖥️ Botón del Tótem adaptado para responder dentro del APK */}
+        <button 
+          onClick={() => setActivarModoTotem(true)} 
+          style={{
+            padding: '14px', cursor: 'pointer', fontSize: '15px',
+            backgroundColor: '#1e293b', color: '#38bdf8', 
+            border: '1px solid #334155', borderRadius: '6px', fontWeight: 'bold', 
+            transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+          }}
+        >
+          🖥️ Modo Tótem
+        </button>
       </div>
+
+
 
       {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
       {pestañaActiva === 'pulseras' && (
@@ -709,8 +729,7 @@ const obtenerTextoAcceso = (id) => {
                     <td style={{ padding: '10px 4px', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                         
-                        {/* Botón A: Recargar */}
-                                                {/* Botón A: Recargar Blindado con Contraseña de Supervisor */}
+                        {/* Botón A: Recargar Blindado con Contraseña de Supervisor */}
                         <button 
                           type="button" 
                           onClick={async () => {
@@ -1303,6 +1322,7 @@ const obtenerTextoAcceso = (id) => {
       </footer>
 
     </div>
+    )
   );
   
 }
