@@ -56,11 +56,11 @@ app.post('/pulseras', async (req, res) => {
   const uidBuscar = codigo_nfc.trim().toUpperCase();
 
   try {
-    // 2. EL CANDADO DE SEGURIDAD: Consultamos a Neon si ese ID exacto ya vive en la tabla
-    const consultaExistencia = await pool.query(
-      'SELECT id, saldo FROM pulseras WHERE UPPER(TRIM(codigo_nfc)) = $1', 
-      [uidBuscar]
-    );
+    // 🌟 CORRECCIÓN 1: Cambiamos "codigo_nfc" por "codigo" que es tu columna real de Neon
+  const consultaExistencia = await pool.query(
+  'SELECT id, saldo FROM pulseras WHERE UPPER(TRIM(codigo)) = $1', 
+  [uidBuscar]
+);
 
     // 🌟 SI YA EXISTE, SE DETIENE DE INMEDIATO Y ENVÍA EL MENSAJE DE ALERTA
     if (consultaExistencia.rows.length > 0) {
@@ -70,11 +70,11 @@ app.post('/pulseras', async (req, res) => {
       });
     }
 
-    // 3. SI ESTÁ LIMPIA, PROCEDE CON EL REGISTRO NORMAL EN NEON CLOUD
-    const nuevoRegistro = await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
-      [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
-    );
+    // 🌟 CORRECCIÓN 2: Aseguramos que inserte en la columna "codigo"
+      const nuevoRegistro = await pool.query(
+        'INSERT INTO pulseras (codigo, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
+        [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
+);
 
     // Respuesta de éxito total
     return res.status(201).json({
