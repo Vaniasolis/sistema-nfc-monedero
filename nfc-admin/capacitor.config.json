@@ -3,7 +3,13 @@
   "appName": "EASYCASHLESS",
   "webDir": "dist",
   "server": {
-    "url": "https://nfc-admin-theta.vercel.app",
-    "cleartext": true
+    "url": "https://nfc-admin-theta.vercel.app", 
+    "allowNavigation": [
+      "nfc-admin-theta.vercel.app",
+      "sistema-nfc-monedero-production.up.railway.app"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true
   }
 }

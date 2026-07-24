@@ -116,32 +116,51 @@ const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
   // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
 const cargarPulseras = async () => {
   try { 
-    const enlaceReal = apiUrlDinamica || "https://sistema-nfc-monedero-production.up.railway.app";
-    const res = await axios.get(`${enlaceReal}/pulseras?_nocache=${new Date().getTime()}`); 
+    // 🌟 FORZAMOS TU URL REAL DE RAILWAY DIRECTA PARA EVITAR CAÍDAS DE RED EN EL APK
+    const enlaceReal = "https://sistema-nfc-monedero-production.up.railway.app";
     
-    if (res.data && Array.isArray(res.data)) {
+    const res = await axios.get(`${enlaceReal}/pulseras?_nocache=${new Date().getTime()}`, {
+      timeout: 7000 // ⏱️ Si en 7 segundos no responde internet, aborta de forma segura sin congelar la app
+    }); 
+    
+    if (res && res.data && Array.isArray(res.data)) {
       const mapaSaldosUnificados = {};
 
       let saldosPermanentesDisco = {};
       try {
-        saldosPermanentesDisco = JSON.parse(localStorage.getItem('saldos_contingencia_evento2')) || {};
-      } catch (e) {}
+        // Envolvemos la lectura por si Android bloquea el almacenamiento interno
+        const datosLocales = localStorage.getItem('saldos_contingencia_evento2');
+        saldosPermanentesDisco = datosLocales ? JSON.parse(datosLocales) : {};
+      } catch (e) {
+        saldosPermanentesDisco = {};
+      }
 
       res.data.forEach(pulsera => {
+        if (!pulsera) return;
+
         const codigoLimpio = (pulsera.codigo_nfc || pulsera.codigo || '').replace('C-', '').trim().toUpperCase();
         
-        if (codigoLimpio && codigoLimpio !== "") {
-          if (!mapaSaldosUnificados[codigoLimpio]) {
-            mapaSaldosUnificados[codigoLimpio] = { ...pulsera, codigo_nfc: codigoLimpio, saldo: 0 };
-          }
-          mapaSaldosUnificados[codigoLimpio].saldo += parseFloat(pulsera.saldo || 0);
+        // Saltamos registros vacíos o corruptos
+        if (!codigoLimpio || codigoLimpio.length < 5) return;
+
+        if (!mapaSaldosUnificados[codigoLimpio]) {
+          mapaSaldosUnificados[codigoLimpio] = { ...pulsera, codigo_nfc: codigoLimpio, saldo: 0 };
         }
+        
+        mapaSaldosUnificados[codigoLimpio].saldo += parseFloat(pulsera.saldo || 0);
       });
 
+      // Actualiza las pulseras en la tabla turquesa
       setPulseras(Object.values(mapaSaldosUnificados));
+    } else {
+      // Salvavidas: Si llega algo raro del servidor, inicializa vacío para no romper la pantalla
+      setPulseras([]);
     }
   } catch (err) {
     console.error("❌ Error al cargar pulseras desde la nube:", err);
+    // 🌟 CLAVE ANTIBLOQUEO: Si el servidor falla o no hay internet, ponemos una lista vacía
+    // para que la interfaz turquesa de React cargue de todos modos y no se quede en blanco.
+    setPulseras([]); 
   }
 };
 
@@ -709,10 +728,10 @@ const obtenerTextoAcceso = (id) => {
                 {pulseras.map((p) => (
                   <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
                     
-                    {/* 1️⃣ CAJÓN NFC (Cae bajo el título NFC) */}
-                    <td style={{ fontWeight: '500', padding: '10px 4px', wordBreak: 'break-all', fontSize: '12px' }}>
-                      {p.codigo_nfc}
-                    </td>
+                    {/* 🆔 COLUMNA ID NFC REDUCIDA SÓLO PARA QUE NO SE ROMPA EN EL CELULAR */}
+                  <td style={{ fontSize: '12px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                    {pulsera.codigo_nfc || pulsera.codigo}
+                  </td>
 
                   {/* 2️⃣ CAJÓN ACCESO (CORREGIDO CON TU TRADUCTOR DE IDS DE NEON) */}
                   <td style={{ padding: '10px 4px', fontSize: '12px' }}>
@@ -1125,26 +1144,26 @@ const obtenerTextoAcceso = (id) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontWeight: 'bold', color: '#495057' }}>Tipo de Acceso:</label>
                 {/* ✅ VERSIÓN REPARADA, ESTABLE Y COMPATIBLE CON TU CÓDIGO */}
-                        <select 
+            
+            {/* 🎟️ CORRECCIÓN INDESTRUCTIBLE DE LAS OPCIONES DEL MENÚ */}
+        <select 
           id="tipoAccesoId"
           name="tipoAccesoId"
           value={typeof tipoAccesoId !== 'undefined' ? tipoAccesoId : ''} 
           onChange={(e) => {
-            // 🌟 REPARACIÓN DE ORO: Dejamos el texto puro ('VIP', 'Staff') sin volverlo número
-            const valorTexto = e.target.value; 
+            const valorNumerico = Number(e.target.value); 
             if (typeof setTipoAccesoId === 'function') {
-              setTipoAccesoId(valorTexto);
+              setTipoAccesoId(valorNumerico);
             } else if (typeof setTipoAcceso === 'function') {
-              setTipoAcceso(valorTexto);
+              setTipoAcceso(valorNumerico);
             }
           }}
           style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#fff', color: '#334155', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 'bold', display: 'block', marginTop: '5px' }}
         >
-          <option value="">-- Seleccione un acceso (Por defecto: General) --</option>
-          <option value="General">General</option>
-          <option value="VIP">VIP</option>
-          <option value="Staff">Staff</option>
-          <option value="Cortesia">Cortesia</option>
+          <option value="1">General</option>
+          <option value="2">VIP</option>
+          <option value="4">Staff</option>
+          <option value="5">Cortesia</option>
         </select>
 
               </div>
