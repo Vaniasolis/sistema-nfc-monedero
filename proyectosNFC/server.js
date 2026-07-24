@@ -45,7 +45,7 @@ app.post('/productos', async (req, res) => {
   }
 });
 
-// 🔒 CANDADO DE SEGURIDAD CORREGIDO (Removido el "id" inexistente de la consulta)
+// 🔒 ENDPOINT DE REGISTRO REPARADO CON TUS COLUMNAS REALES DE NEON
 app.post('/pulseras', async (req, res) => {
   const { codigo_nfc, saldo_inicial, tipo_pulsera } = req.body;
 
@@ -55,13 +55,13 @@ app.post('/pulseras', async (req, res) => {
   const uidBuscar = codigo_nfc.trim().toUpperCase();
 
   try {
-    // 🌟 LA REPARACIÓN: Pedimos únicamente el saldo, quitando el id que causaba el quiebre
+    // 🌟 REPARACIÓN: Buscamos usando tu columna real "codigo_nfc" y jalamos el "saldo"
     const consultaExistencia = await pool.query(
-      'SELECT saldo FROM pulseras WHERE UPPER(TRIM(codigo)) = $1', 
+      'SELECT saldo FROM pulseras WHERE UPPER(TRIM(codigo_nfc)) = $1', 
       [uidBuscar]
     );
 
-    // Si ya existe, detenemos el fraude en seco
+    // Si ya existe en el evento, frena el duplicado en seco
     if (consultaExistencia.rows.length > 0) {
       const pulseraExistente = consultaExistencia.rows[0];
       return res.status(400).json({ 
@@ -69,9 +69,9 @@ app.post('/pulseras', async (req, res) => {
       });
     }
 
-    // Si está limpia, procede a guardarla en tu columna "codigo" real de Neon
+    // 🌟 INSERCIÓN: Insertamos usando tu columna real "codigo_nfc"
     const nuevoRegistro = await pool.query(
-      'INSERT INTO pulseras (codigo, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
+      'INSERT INTO pulseras (codigo_nfc, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
       [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
     );
 
