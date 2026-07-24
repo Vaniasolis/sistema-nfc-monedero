@@ -45,24 +45,23 @@ app.post('/productos', async (req, res) => {
   }
 });
 
-// 🔒 ENDPOINT DE REGISTRO BLINDADO CONTRA DUPLICADOS
+// 🔒 CANDADO DE SEGURIDAD CORREGIDO (Removido el "id" inexistente de la consulta)
 app.post('/pulseras', async (req, res) => {
   const { codigo_nfc, saldo_inicial, tipo_pulsera } = req.body;
 
-  // 1. Limpieza estricta del ID que nos manda el cliente
   if (!codigo_nfc || !codigo_nfc.trim()) {
     return res.status(400).json({ error: "El código de la pulsera es obligatorio" });
   }
   const uidBuscar = codigo_nfc.trim().toUpperCase();
 
   try {
-    // 🌟 CORRECCIÓN 1: Cambiamos "codigo_nfc" por "codigo" que es tu columna real de Neon
-  const consultaExistencia = await pool.query(
-  'SELECT id, saldo FROM pulseras WHERE UPPER(TRIM(codigo)) = $1', 
-  [uidBuscar]
-);
+    // 🌟 LA REPARACIÓN: Pedimos únicamente el saldo, quitando el id que causaba el quiebre
+    const consultaExistencia = await pool.query(
+      'SELECT saldo FROM pulseras WHERE UPPER(TRIM(codigo)) = $1', 
+      [uidBuscar]
+    );
 
-    // 🌟 SI YA EXISTE, SE DETIENE DE INMEDIATO Y ENVÍA EL MENSAJE DE ALERTA
+    // Si ya existe, detenemos el fraude en seco
     if (consultaExistencia.rows.length > 0) {
       const pulseraExistente = consultaExistencia.rows[0];
       return res.status(400).json({ 
@@ -70,17 +69,16 @@ app.post('/pulseras', async (req, res) => {
       });
     }
 
-    // 🌟 CORRECCIÓN 2: Aseguramos que inserte en la columna "codigo"
-      const nuevoRegistro = await pool.query(
-        'INSERT INTO pulseras (codigo, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
-        [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
-);
+    // Si está limpia, procede a guardarla en tu columna "codigo" real de Neon
+    const nuevoRegistro = await pool.query(
+      'INSERT INTO pulseras (codigo, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
+      [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
+    );
 
-    // Respuesta de éxito total
     return res.status(201).json({
       success: true,
       message: "Pulsera registrada con éxito absoluto",
-      data: nuevoRegistro.rows[0]
+      data: nuevoRegistro.rows
     });
 
   } catch (error) {
