@@ -69,10 +69,10 @@ app.post('/pulseras', async (req, res) => {
       });
     }
 
-    // 🌟 2. INSERCIÓN ATÓMICA: Mapea exactamente tus campos "codigo_nfc", "saldo" y "tipo_acceso_id"
+    // 🌟 INSERCIÓN REPARADA: Leemos "saldo_inicial" o "saldo" para que capte el dinero del formulario
     const nuevoRegistro = await pool.query(
       'INSERT INTO pulseras (codigo_nfc, saldo, tipo_acceso_id) VALUES ($1, $2, $3) RETURNING *',
-      [uidBuscar, saldo_inicial || 0, tipo_pulsera || 1] // Pasa el ID numérico (1, 2, 4 o 5) que seleccionas
+      [uidBuscar, saldo_inicial || req.body.saldo || 0, tipo_pulsera || 1]
     );
 
     return res.status(201).json({
