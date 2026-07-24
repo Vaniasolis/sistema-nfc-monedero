@@ -130,7 +130,7 @@ export default function Totem({ alSalir }) {
           {/* 💻 CASILLA DE CONSULTA UNIFICADA (Celular y Laptop) */}
           <div style={{ marginTop: '15px' }}>
             <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '5px' }}>
-              [Acerque su ficha o presione Enter al completarse el código]
+              [Acerque su pulsera para conocer su saldo]
             </p>
             <form onSubmit={handleSubmitFormulario}>
               <input

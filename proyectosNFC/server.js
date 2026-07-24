@@ -45,7 +45,7 @@ app.post('/productos', async (req, res) => {
   }
 });
 
-// 🔒 ENDPOINT DE REGISTRO REPARADO CON TUS COLUMNAS REALES DE NEON
+// 🔒 ENDPOINT DE REGISTRO REPARADO DE EXTREMO A EXTREMO (Sincronizado con tus fotos)
 app.post('/pulseras', async (req, res) => {
   const { codigo_nfc, saldo_inicial, tipo_pulsera } = req.body;
 
@@ -55,13 +55,13 @@ app.post('/pulseras', async (req, res) => {
   const uidBuscar = codigo_nfc.trim().toUpperCase();
 
   try {
-    // 🌟 REPARACIÓN: Buscamos usando tu columna real "codigo_nfc" y jalamos el "saldo"
+    // 🌟 1. CANDADO DE EXISTENCIA: Busca usando tu columna real "codigo_nfc"
     const consultaExistencia = await pool.query(
       'SELECT saldo FROM pulseras WHERE UPPER(TRIM(codigo_nfc)) = $1', 
       [uidBuscar]
     );
 
-    // Si ya existe en el evento, frena el duplicado en seco
+    // Si ya existe en el evento, detiene la duplicidad de inmediato
     if (consultaExistencia.rows.length > 0) {
       const pulseraExistente = consultaExistencia.rows[0];
       return res.status(400).json({ 
@@ -69,10 +69,10 @@ app.post('/pulseras', async (req, res) => {
       });
     }
 
-    // 🌟 INSERCIÓN: Insertamos usando tu columna real "codigo_nfc"
+    // 🌟 2. INSERCIÓN ATÓMICA: Mapea exactamente tus campos "codigo_nfc", "saldo" y "tipo_acceso_id"
     const nuevoRegistro = await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
-      [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
+      'INSERT INTO pulseras (codigo_nfc, saldo, tipo_acceso_id) VALUES ($1, $2, $3) RETURNING *',
+      [uidBuscar, saldo_inicial || 0, tipo_pulsera || 1] // Pasa el ID numérico (1, 2, 4 o 5) que seleccionas
     );
 
     return res.status(201).json({
