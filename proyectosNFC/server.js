@@ -9,12 +9,7 @@ const PORT = process.env.PORT || 8080;
 // 🔌 CONFIGURACIÓN UNIFICADA DE LA BASE DE DATOS NEON (CON CANDADOS DE ESTABILIDAD)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  
-  // 🌟 EL PARCHE DE SEGURIDAD ABSOLUTO: Forzamos la verificación completa para que Android no bloquee la app
-  ssl: { 
-    rejectUnauthorized: true,
-    sslmode: 'verify-full'
-  },
+  ssl: { rejectUnauthorized: false },
   
   // 🌟 EL PARCHE DE ORO: Evita el choque entre el pooler de Neon y tu backend
   max: 6,                       // Limita a 6 conexiones simultáneas máximas en tu plan gratis
@@ -22,7 +17,12 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000 // Cancela peticiones congeladas tras 5 segundos para liberar red
 });
 
-app.use(cors());
+app.use(cors({
+  origin: '*', // Permite que tu laptop, celulares y tótems consulten sin bloqueos
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // 🫀 RUTA DE CONTROL: Verificar que el backend responda en Railway

@@ -138,19 +138,20 @@ const cargarPulseras = async () => {
       res.data.forEach(pulsera => {
         if (!pulsera) return;
 
+        // 1. Usamos "pulsera"
         const codigoLimpio = (pulsera.codigo_nfc || pulsera.codigo || '').replace('C-', '').trim().toUpperCase();
         
-        // Saltamos registros vacíos o corruptos
         if (!codigoLimpio || codigoLimpio.length < 5) return;
 
         if (!mapaSaldosUnificados[codigoLimpio]) {
+          // 2. Usamos "...pulsera"
           mapaSaldosUnificados[codigoLimpio] = { ...pulsera, codigo_nfc: codigoLimpio, saldo: 0 };
         }
         
+        // 3. 🌟 LA LÍNEA CRÍTICA: Asegúrate de que aquí diga "pulsera.saldo" de forma estricta
         mapaSaldosUnificados[codigoLimpio].saldo += parseFloat(pulsera.saldo || 0);
       });
-
-      // Actualiza las pulseras en la tabla turquesa
+      
       setPulseras(Object.values(mapaSaldosUnificados));
     } else {
       // Salvavidas: Si llega algo raro del servidor, inicializa vacío para no romper la pantalla
@@ -196,10 +197,10 @@ const guardarPulsera = async () => {
     if (accesoTexto === '4' || accesoTexto.toLowerCase() === 'cortesia' || accesoTexto.toLowerCase() === 'cortesía') accesoTexto = 'Cortesia';
     if (accesoTexto === '5' || accesoTexto.toLowerCase() === 'staff') accesoTexto = 'Staff';
 
-    // Enviamos la petición unificada a tu servidor de Railway
+    // 🌟 ENVIAMOS LA PETICIÓN UNIFICADA Y CORREGIDA A RAILWAY
     const res = await axios.post(`${apiUrlDinamica}/pulseras`, {
       codigo_nfc: codigoAEnviar.trim().toUpperCase(),
-      tipo_acceso: accesoTexto, 
+      tipo_pulsera: tipoAccesoId, // 🌟 PARCHE DE ORO: Cambiado a "tipo_pulsera" enviando el ID (1,2,3,4,5)
       saldo: parseFloat(saldo) || 0
     });
 
@@ -433,21 +434,17 @@ const manejarRecarga = async (e) => {
   }
 };
 
-// 🌟 SINCRO DE ACCESOS COMPLETA: Alineado 100% con la imagen real de tu tabla de Neon
+// 🌟 FUNCIÓN TRADUCTORA BLINDADA (Evaluación directa sin variables intermedias)
 const obtenerTextoAcceso = (id) => {
-  if (!id) return 'General';
+  if (!id) return 'General'; // Salvavidas por si llega nulo de la base de datos
   
-  // Forzamos a que el ID sea un texto limpio sin espacios
-  const idLimpio = String(id).trim();
-
-  // 📊 Mapeo exacto basado en tu captura de pantalla física:
-  if (idLimpio === '1') return 'General';
-  if (idLimpio === '2') return 'VIP';
-  if (idLimpio === '3') return 'Backstage';
-  if (idLimpio === '4') return 'Cortesia';
-  if (idLimpio === '5') return 'Staff';
+  if (Number(id) === 1) return 'General';
+  if (Number(id) === 2) return 'VIP';
+  if (Number(id) === 3) return 'Backstage';
+  if (Number(id) === 4) return 'Staff';
+  if (Number(id) === 5) return 'Cortesia';
   
-  return 'General'; // Salvavidas por defecto
+  return 'General';
 };
 
   return (
@@ -730,7 +727,7 @@ const obtenerTextoAcceso = (id) => {
                     
                     {/* 🆔 COLUMNA ID NFC REDUCIDA SÓLO PARA QUE NO SE ROMPA EN EL CELULAR */}
                   <td style={{ fontSize: '12px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
-                    {pulsera.codigo_nfc || pulsera.codigo}
+                    {p.codigo_nfc || p.codigo}
                   </td>
 
                   {/* 2️⃣ CAJÓN ACCESO (CORREGIDO CON TU TRADUCTOR DE IDS DE NEON) */}
@@ -1146,7 +1143,7 @@ const obtenerTextoAcceso = (id) => {
                 {/* ✅ VERSIÓN REPARADA, ESTABLE Y COMPATIBLE CON TU CÓDIGO */}
             
             {/* 🎟️ CORRECCIÓN INDESTRUCTIBLE DE LAS OPCIONES DEL MENÚ */}
-        <select 
+              <select 
           id="tipoAccesoId"
           name="tipoAccesoId"
           value={typeof tipoAccesoId !== 'undefined' ? tipoAccesoId : ''} 
@@ -1162,6 +1159,7 @@ const obtenerTextoAcceso = (id) => {
         >
           <option value="1">General</option>
           <option value="2">VIP</option>
+          <option value="3">Backstage</option> {/* 🌟 AGREGADO CON SU ID REAL 3 */}
           <option value="4">Staff</option>
           <option value="5">Cortesia</option>
         </select>
