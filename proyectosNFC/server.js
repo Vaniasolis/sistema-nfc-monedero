@@ -45,38 +45,49 @@ app.post('/productos', async (req, res) => {
   }
 });
 
-// 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (CORREGIDO Y AMPLIADO)
-// 2. RUTA: REGISTRAR UNA NUEVA PULSERA CASHLESS (ALINEADA CON TU TABLA DE ACCESOS REAL)
+// 🔒 ENDPOINT DE REGISTRO BLINDADO CONTRA DUPLICADOS
 app.post('/pulseras', async (req, res) => {
-  const { codigo_nfc, tipo_acceso, saldo } = req.body;
-  if (!codigo_nfc) {
-    return res.status(400).json({ error: "El código NFC es obligatorio" });
+  const { codigo_nfc, saldo_inicial, tipo_pulsera } = req.body;
+
+  // 1. Limpieza estricta del ID que nos manda el cliente
+  if (!codigo_nfc || !codigo_nfc.trim()) {
+    return res.status(400).json({ error: "El código de la pulsera es obligatorio" });
   }
+  const uidBuscar = codigo_nfc.trim().toUpperCase();
+
   try {
-    // Convertimos a texto limpio, sin espacios y en minúsculas
-    const accesoLimpio = tipo_acceso ? String(tipo_acceso).trim().toLowerCase() : '';
-
-    // 🌟 NUEVOS IDS ALINEADOS 100% CON TU FOTO
-    let idNumericoAcceso = 1; // Por defecto: ID 1 = General
-
-    if (accesoLimpio === 'general' || accesoLimpio === '1') idNumericoAcceso = 1;
-    if (accesoLimpio === 'vip' || accesoLimpio === '2') idNumericoAcceso = 2;
-    if (accesoLimpio === 'backstage' || accesoLimpio === '3') idNumericoAcceso = 3;
-    if (accesoLimpio === 'cortesia' || accesoLimpio === 'cortesía' || accesoLimpio === '4') idNumericoAcceso = 4;
-    if (accesoLimpio === 'staff' || accesoLimpio === '5') idNumericoAcceso = 5;
-
-    // Ejecutamos la consulta en Neon SQL
-    await pool.query(
-      'INSERT INTO pulseras (codigo_nfc, tipo_acceso_id, saldo) VALUES ($1, $2, $3) ON CONFLICT (codigo_nfc) DO UPDATE SET tipo_acceso_id = $2, saldo = $3',
-      [codigo_nfc, idNumericoAcceso, parseFloat(saldo || 0)]
+    // 2. EL CANDADO DE SEGURIDAD: Consultamos a Neon si ese ID exacto ya vive en la tabla
+    const consultaExistencia = await pool.query(
+      'SELECT id, saldo FROM pulseras WHERE UPPER(TRIM(codigo_nfc)) = $1', 
+      [uidBuscar]
     );
-    res.json({ exito: true, mensaje: "🎉 ¡Pulsera registrada con éxito en Railway!" });
-  } catch (err) {
-    console.error("❌ Error en POST registrar pulsera:", err.message);
-    res.status(500).json({ error: err.message });
+
+    // 🌟 SI YA EXISTE, SE DETIENE DE INMEDIATO Y ENVÍA EL MENSAJE DE ALERTA
+    if (consultaExistencia.rows.length > 0) {
+      const pulseraExistente = consultaExistencia.rows[0];
+      return res.status(400).json({ 
+        error: `¡Alerta de Seguridad! La pulsera [${uidBuscar}] ya está registrada en el evento con un saldo de $${pulseraExistente.saldo}. No se puede duplicar.` 
+      });
+    }
+
+    // 3. SI ESTÁ LIMPIA, PROCEDE CON EL REGISTRO NORMAL EN NEON CLOUD
+    const nuevoRegistro = await pool.query(
+      'INSERT INTO pulseras (codigo_nfc, saldo, tipo) VALUES ($1, $2, $3) RETURNING *',
+      [uidBuscar, saldo_inicial || 0, tipo_pulsera || 'General']
+    );
+
+    // Respuesta de éxito total
+    return res.status(201).json({
+      success: true,
+      message: "Pulsera registrada con éxito absoluto",
+      data: nuevoRegistro.rows[0]
+    });
+
+  } catch (error) {
+    console.error("Error crítico en el candado de registro:", error);
+    return res.status(500).json({ error: "Error interno del servidor al validar la pulsera" });
   }
 });
-
 
 // 📦 3. RUTA: RECARGAR DINERO A UNA PULSERA (MODAL DE SALDO - PROTEGIDO)
 app.put('/pulseras/recargar', async (req, res) => {
