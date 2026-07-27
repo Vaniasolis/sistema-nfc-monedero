@@ -651,53 +651,42 @@ const obtenerTextoAcceso = (id) => {
         </select>
       </div>
       
-      {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', backgroundColor: '#e9ecef', padding: '5px', borderRadius: '8px' }}>
-        <button
-          onClick={() => {
-            setPestañaActiva('pulseras');
-            localStorage.setItem('ultima_pestana_easycashless', 'pulseras');
-          }}
-          style={{
-            flex: 1, padding: '14px', cursor: 'pointer', fontSize: '16px',
-            backgroundColor: pestañaActiva === 'pulseras' ? '#007bff' : 'transparent',
-            color: pestañaActiva === 'pulseras' ? 'white' : '#495057',
-            border: 'none', borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s'
-          }}
-        >
-          🎟️ Gestión Pulseras
-        </button>
+      {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH Y BLINDADA PARA MÓVIL */}
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px',  marginBottom: '20px', backgroundColor: '#e9ecef', padding: '6px', borderRadius: '8px', boxSizing: 'border-box', width: '100%'}}>
   
-        <button 
-          onClick={() => {
-            setPestañaActiva('productos');
-            localStorage.setItem('ultima_pestana_easycashless', 'productos');
-          }} 
-          style={{
-            flex: 1, padding: '14px', cursor: 'pointer', fontSize: '16px',
-            backgroundColor: pestañaActiva === 'productos' ? '#007bff' : 'transparent', 
-            color: pestañaActiva === 'productos' ? 'white' : '#495057', 
-            border: 'none', borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s'
-          }}
-        >
-          🍺 Punto de Venta
-        </button>
+  {/* 1️⃣ BOTÓN GESTIÓN PULSERAS */}
+  <button
+    onClick={() => {
+      setPestañaActiva('pulseras');
+      localStorage.setItem('ultima_pestana_easycashless', 'pulseras');
+    }}
+    style={{
+      flex: '1 1 100px', minWidth: '100px', padding: '12px 6px', cursor: 'pointer',fontSize: '14px', backgroundColor: pestañaActiva === 'pulseras' ? '#007bff' : 'transparent', color: pestañaActiva === 'pulseras' ? 'white' : '#495057', 
+      border: 'none', borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s', whiteSpace: 'normal', wordBreak: 'break-word'}}
+  >
+    🎟️ Gestión Pulseras
+  </button>
 
-        {/* 🖥️ Botón del Tótem adaptado para responder dentro del APK */}
-        <button 
-          onClick={() => setActivarModoTotem(true)} 
-          style={{
-            padding: '14px', cursor: 'pointer', fontSize: '15px',
-            backgroundColor: '#1e293b', color: '#38bdf8', 
-            border: '1px solid #334155', borderRadius: '6px', fontWeight: 'bold', 
-            transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-          }}
-        >
-          🖥️ Modo Tótem
-        </button>
-      </div>
+  {/* 2️⃣ BOTÓN PUNTO DE VENTA */}
+  <button 
+    onClick={() => {
+      setPestañaActiva('productos');
+      localStorage.setItem('ultima_pestana_easycashless', 'productos');
+    }} 
+    style={{
+      flex: '1 1 100px', minWidth: '100px', padding: '12px 6px', cursor: 'pointer', fontSize: '14px', backgroundColor: pestañaActiva === 'productos' ? '#007bff' : 'transparent', 
+      color: pestañaActiva === 'productos' ? 'white' : '#495057', border: 'none', borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s', whiteSpace: 'normal', wordBreak: 'break-word'}}>
+    🍺 Punto de Venta
+  </button>
 
-
+  {/* 3️⃣ BOTÓN MODO TÓTEM */}
+  <button 
+    onClick={() => setActivarModoTotem(true)} 
+    style={{flex: '1 1 100px', minWidth: '100px', padding: '12px 6px', cursor: 'pointer', fontSize: '14px', backgroundColor: '#1e293b', color: '#38bdf8', border: '1px solid #334155', 
+      borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'normal', wordBreak: 'break-word'}}>
+    🖥️ Modo Tótem
+  </button>
+  </div>
 
       {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
 {pestañaActiva === 'pulseras' && (
