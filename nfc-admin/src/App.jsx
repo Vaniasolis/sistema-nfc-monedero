@@ -19,7 +19,6 @@ function App() {
   const CONTRASEÑA_ACCESO_SISTEMA = "admin29"; 
 
   // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
-  // 📡 1. URL DINÁMICA (Primero declaramos la variable de internet)
   const [apiUrlDinamica, setApiUrlDinamica] = useState("https://sistema-nfc-monedero-production.up.railway.app");
 
   // 🛒 ESTADO PARA EL CARRITO DE COMPRAS EN BARRA
@@ -35,6 +34,10 @@ const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
     
     // Guardamos permanentemente el enlace activo en el disco para que no se pierda el canal
     localStorage.setItem('enlace_activo_easycashless', nuevoEnlace);
+
+    // 🌟 TRUCO VISUAL: Limpiamos los datos del Evento 1 al instante para que no dejen fantasmas en el celular
+    if (typeof setPulseras === 'function') setPuleras([]);
+    if (typeof setProductos === 'function') setProductos([]);
     
     alert('✅ Código correcto. Sintonizando nuevo canal de evento en la nube...');
 
@@ -119,7 +122,7 @@ const cargarPulseras = async () => {
     // 🌟 FORZAMOS TU URL REAL DE RAILWAY DIRECTA PARA EVITAR CAÍDAS DE RED EN EL APK
     const enlaceReal = "https://sistema-nfc-monedero-production.up.railway.app";
     
-    const res = await axios.get(`${enlaceReal}/pulseras?_nocache=${new Date().getTime()}`, {
+    const res = await axios.get(`${apiUrlDinamica}/pulseras?_nocache=${new Date().getTime()}`, {
       timeout: 7000 // ⏱️ Si en 7 segundos no responde internet, aborta de forma segura sin congelar la app
     }); 
     
@@ -632,27 +635,41 @@ const obtenerTextoAcceso = (id) => {
         </div>
       ):      
 
-      // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
-    <div style={{ padding: '15px', paddingTop: '35px', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif', backgroundColor: 'transparent', boxSizing: 'border-box' }}>
-      
-            {/* 🎛️ SELECTOR DE CANAL INTELIGENTE MULTI-EVENTO (BLINDADO CON HTTPS) */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', backgroundColor: '#1e293b', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #334155' }}>
-        <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>CANAL:</label>
-        <select 
-          value={apiUrlDinamica}
-          onChange={(e) => cambiarCanalEvento(e.target.value, e.target)}
-          style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
-        >
-          {/* 🌟 Canal 1: Tu nuevo servidor unificado en Railway */}
-          <option value="https://sistema-nfc-monedero-production.up.railway.app">🎟️ Evento 1 (Railway Producción)</option>
-          
-          {/* 🌟 Canal 2: CORREGIDO CON HTTPS SEGURO */}
-          <option value="https://sistema-nfc-monedero-copy-1-production.up.railway.app">🎵 Evento 2 (Railway Respaldo)</option>
-        </select>
-      </div>
-      
-      {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH Y BLINDADA PARA MÓVIL */}
-<div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px',  marginBottom: '20px', backgroundColor: '#e9ecef', padding: '6px', borderRadius: '8px', boxSizing: 'border-box', width: '100%'}}>
+     // 🌟 REGLA DE ORO DE DISEÑO: Agregamos un colchón de relleno superior (paddingTop) para obligar a Android a bajar todo el diseño
+  // 🌟 CORRECCIÓN CRÍTICA: Añadimos width, maxWidth y overflowX para enmascarar el desborde en teléfonos
+  <div style={{ 
+    width: '100%',
+    maxWidth: '100vw',           // 🔒 Bloquea que el diseño mida más que el ancho del celular
+    overflowX: 'hidden',         // 🔒 Corta y oculta cualquier elemento rebelde que intente salirse de lado
+    padding: '15px', 
+    paddingTop: '35px', 
+    minHeight: '100vh', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    fontFamily: 'sans-serif', 
+    backgroundColor: 'transparent', 
+    boxSizing: 'border-box' 
+  }}>
+    
+    {/* 🎛️ SELECTOR DE CANAL INTELIGENTE MULTI-EVENTO (BLINDADO CON HTTPS) */}
+    <div style={{ display: 'flex', justifyContent: 'center', System: 'center', alignItems: 'center', gap: '10px', backgroundColor: '#1e293b', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #334155' }}>
+      <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>CANAL:</label>
+      <select 
+        value={apiUrlDinamica}
+        onChange={(e) => cambiarCanalEvento(e.target.value, e.target)}
+        style={{ backgroundColor: '#0f172a', color: '#2c909e', border: '1px solid #2c909e', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+      >
+        {/* 🌟 Canal 1: Tu nuevo servidor unificado en Railway */}
+        <option value="https://sistema-nfc-monedero-production.up.railway.app">🎟️ Evento 1 (Producción)</option>
+        
+        {/* 🌟 Canal 2: CORREGIDO CON HTTPS SEGURO */}
+        <option value="https://sistema-nfc-monedero-copy-1-production.up.railway.app">🎵 Evento 2 (Respaldo)</option>
+      </select>
+    </div>
+    
+    {/* 🧭 BARRA DE PESTAÑAS ADAPTADA PARA TOUCH Y BLINDADA PARA MÓVIL */}
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px',  marginBottom: '20px', backgroundColor: '#e9ecef', padding: '6px', borderRadius: '8px', boxSizing: 'border-box', width: '100%'}}>
+
   
   {/* 1️⃣ BOTÓN GESTIÓN PULSERAS */}
   <button
@@ -688,24 +705,24 @@ const obtenerTextoAcceso = (id) => {
   </button>
   </div>
 
-      {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
+      {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO EXACTAMENTE IGUAL AL PUNTO DE VENTA */}
 {pestañaActiva === 'pulseras' && (
-  // 🌟 CORRECCIÓN CRÍTICA: Añadimos estilos aquí para frenar el estiramiento general en el celular
-  <div style={{ width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>
+  // 🌟 CORRECCIÓN: Usamos exactamente el mismo tipo de contenedor limpio que en productos
+  <div style={{ display: 'flex', gap: '20px', flexDirection: 'column', width: '100%', boxSizing: 'border-box' }}>
     
     {/* Bloque Gris de Estadísticas */}
-    <div style={{ display: "flex", marginBottom: "15px" }}>
+    <div style={{ display: "flex" }}>
       <div style={{ flex: 1, border: "1px solid #ced4da", padding: "15px", borderRadius: "8px", backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', textAlign: 'center' }}>
         <h4 style={{ margin: 0, color: '#6c757d', fontSize: '14px' }}>Total Pulseras</h4>
         <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
       </div>
     </div>
     
-    {/* 📱 CONTENEDOR ENMASCARADO PARA EL SCROLL DE LA TABLA */}
+    {/* 📱 CONTENEDOR FLUIDO PARA LA TABLA */}
     <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
       
-      {/* 📊 TABLA CON ANCHO MÍNIMO CÓMODO */}
-      <table border="1" cellPadding="4" style={{ minWidth: '550px', width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
+      {/* 📊 TABLA RESPONSIVA IGUAL QUE EN EL CATÁLOGO */}
+      <table border="1" cellPadding="4" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
         <thead>
           <tr style={{ backgroundColor: '#20c997', color: '#fff', fontSize: '12px' }}>
             <th style={{ padding: '10px 4px' }}>ID NFC</th>
@@ -719,86 +736,146 @@ const obtenerTextoAcceso = (id) => {
           {pulseras.map((p) => (
             <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
               
-              {/* 🆔 COLUMNA ID NFC REDUCIDA SÓLO PARA QUE NO SE ROMPA EN EL CELULAR */}
-              <td style={{ padding: '10px 4px', fontSize: '12px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
-                {p.codigo_nfc || p.codigo}
-              </td>
+              {/* 🆔 COLUMNA ID NFC: Forzado con JavaScript a partirse en dos líneas de texto */}
+<td style={{ 
+  padding: '8px 4px', 
+  fontSize: '11px', 
+  fontFamily: 'monospace',
+  lineHeight: '1.3',
+  textAlign: 'center',
+  whiteSpace: 'normal',
+  width: '100px', // Acortamos el ancho de la celda para darle espacio a los botones
+  maxWidth: '100px'
+}}>
+  {(() => {
+    const idOriginal = p.codigo_nfc || p.codigo || '';
+    // Si el ID es largo (como los de 20 caracteres), lo dividimos justo a la mitad
+    if (idOriginal.length > 11) {
+      const mitad = Math.floor(idOriginal.length / 2);
+      return (
+        <>
+          {idOriginal.substring(0, mitad)}
+          <br />
+          {idOriginal.substring(mitad)}
+        </>
+      );
+    }
+    return idOriginal;
+  })()}
+</td>
 
-              {/* 2️⃣ CAJÓN ACCESO (CORREGIDO CON TU TRADUCTOR DE IDS DE NEON) */}
-              <td style={{ padding: '10px 4px', fontSize: '12px' }}>
-                {obtenerTextoAcceso(p.tipo_acceso_id)}
-              </td>
+{/* 2️⃣ CAJÓN ACCESO */}
+<td style={{ padding: '8px 2px', fontSize: '11px', maxWidth: '60px' }}>
+  {obtenerTextoAcceso(p.tipo_acceso_id)}
+</td>
 
-              {/* 3️⃣ CAJÓN SALDO (Cae bajo el título Saldo) */}
-              <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px', fontSize: '13px' }}>
-                ${parseFloat(p.saldo || 0).toFixed(2)}
-              </td>
-              
-              {/* 4️⃣ CAJÓN ACCIONES (Cae bajo el título Acciones) */}
-              <td style={{ padding: '10px 4px', verticalAlign: 'middle' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+{/* 3️⃣ CAJÓN SALDO */}
+<td style={{ fontWeight: 'bold', color: '#28a745', padding: '8px 2px', fontSize: '12px' }}>
+  ${parseFloat(p.saldo || 0).toFixed(2)}
+</td>
 
-                        
-                        {/* Botón A: Recargar Blindado con Contraseña de Supervisor */}
-                        <button 
-                          type="button" 
-                          onClick={async () => {
-                            // 🔒 CANDADO DE SEGURIDAD OPERATIVO
-                            const claveSupervisor = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para autorizar esta recarga de saldo:');
-                            
-                            if (claveSupervisor === null) return; // Si cancela con el botón, se detiene el flujo en paz
-                            
-                            if (claveSupervisor !== 'admin29') { 
-                              if (navigator.vibrate) navigator.vibrate(250); // Vibración de rechazo en tu Samsung S25
-                              alert('❌ Clave de Supervisor Incorrecta. Recarga rechazada por seguridad.'); 
-                              return; // Bloquea la operación y no deja meter dinero
-                            }
+{/* 4️⃣ CAJÓN ACCIONES: Recupera su espacio horizontal completo */}
+<td style={{ padding: '6px 4px', verticalAlign: 'middle' }}>
+  <div style={{ 
+    display: 'flex', 
+    flexDirection: 'column', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    gap: '6px', 
+    width: '100%'
+  }}>
 
-                            // 💰 SI LA CONTRASEÑA ES CORRECTA, SE DESPLIEGA TU PROMPT ORIGINAL DE DINERO:
-                            const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
-                            if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
-                            
-                            try {
-                              await axios.put(`${apiUrlDinamica}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
-                              alert('¡Recarga exitosa!'); 
-                              cargarPulseras();
-                            } catch (e) { 
-                              alert('No se pudo procesar la recarga.'); 
-                            }
-                          }} 
-                          style={{ width: '90px', padding: '6px 0', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', textAlign: 'center' }}
-                        >
-                          💵 Recargar
-                        </button>
 
-                        {/* 🚀 DEJA TU BOTÓN ROJO EXACTAMENTE CON ESTA ESTRUCTURA: */}
-                        <button 
-                        type="button" 
-                        onClick={async () => {
-                          const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
-                          if (!claveSeguridad) return;
+    {/* Botón A: Recargar Compacto */}
+    <button 
+      type="button" 
+      onClick={async () => {
+        // 🔒 CANDADO DE SEGURIDAD OPERATIVO (Mantén todo tu código de claves idéntico aquí)
+        const claveSupervisor = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para autorizar esta recarga de saldo:');
+        if (claveSupervisor === null) return; 
+        if (claveSupervisor !== 'admin29') { 
+          if (navigator.vibrate) navigator.vibrate(250); 
+          alert('❌ Clave de Supervisor Incorrecta. Recarga rechazada por seguridad.'); 
+          return; 
+        }
+        const m = prompt(`¿Cuánto saldo deseas recargar a la pulsera ${p.codigo_nfc}?`);
+        if (!m || isNaN(m) || parseFloat(m) <= 0) { alert('Monto inválido.'); return; }
+        
+        try {
+          await axios.put(`${apiUrlDinamica}/pulseras/recargar`, { codigo_nfc: p.codigo_nfc, monto: parseFloat(m) });
+          alert('¡Recarga exitosa!'); 
+          cargarPulseras();
+        } catch (e) { 
+          alert('No se pudo procesar la recarga.'); 
+        }
+      }} 
+      // 🌟 ESTILOS MÁS PEQUEÑOS Y ANCHO AJUSTADO
+      style={{ 
+        width: '100%',
+        maxWidth: '90px',       // Ajusta el tamaño máximo para que no se ensanche
+        padding: '7px 0px',     // Padding más pequeño para ahorrar píxeles
+        backgroundColor: '#28a745', 
+        color: 'white', 
+        border: 'none', 
+        borderRadius: '4px', 
+        fontWeight: 'bold', 
+        cursor: 'pointer', 
+        fontSize: '11px', 
+        textAlign: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '2px'
+      }}
+    >
+      💵 Recargar
+    </button>
 
-                          if (claveSeguridad !== 'admin29') {
-                            alert('❌ Clave incorrecta. Acción denegada.');
-                            return;
-                          }
+    {/* Botón B: Eliminar Compacto */}
+    <button 
+      type="button" 
+      onClick={async () => {
+        // 🔒 CANDADO DE SEGURIDAD OPERATIVO (Mantén todo tu código de claves idéntico aquí)
+        const claveSeguridad = prompt('🔒 AUTORIZACIÓN REQUERIDA:\nIntroduzca la clave de administrador para eliminar esta pulsera de la caja:');
+        if (!claveSeguridad) return;
+        if (claveSeguridad !== 'admin29') {
+          alert('❌ Clave incorrecta. Acción denegada.');
+          return;
+        }
+        if (!window.confirm(`¿Confirmas la eliminación permanente de la pulsera ${p.codigo_nfc}?`)) {
+          return;
+        }
 
-                          if (!window.confirm(`¿Confirmas la eliminación permanente de la pulsera ${p.codigo_nfc}?`)) {
-                            return;
-                          }
-
-                          try {
-                            const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
-                            alert(res.data.mensaje);
-                            cargarPulseras(); 
-                          } catch (e) {
-                            alert(e.response?.data?.error || 'No se pudo eliminar la pulsera.');
-                          }
-                        }} 
-                        style={{ padding: '6px 8px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}
-                      >
-                        🗑️ Eliminar
-                      </button>
+        try {
+          const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
+          
+          alert(res.data.mensaje || '🗑️ Pulsera eliminada correctamente.');
+          cargarPulseras(); 
+        } catch (e) {
+          alert(e.response?.data?.error || 'No se pudo eliminar la pulsera.');
+        }
+      }} 
+      // 🌟 ESTILOS MÁS PEQUEÑOS COORDINADOS CON EL BOTÓN VERDE
+      style={{ 
+        width: '100%',
+        maxWidth: '90px', 
+        padding: '7px 0px', 
+        backgroundColor: '#dc3545', 
+        color: 'white', 
+        border: 'none', 
+        borderRadius: '4px', 
+        fontWeight: 'bold', 
+        cursor: 'pointer', 
+        fontSize: '11px',
+        textAlign: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '2px'
+      }}
+    >
+      🗑️ Eliminar
+    </button>
 
                       </div>
                     </td>

@@ -207,7 +207,7 @@ app.delete('/pulseras/eliminar/:id', async (req, res) => {
       return res.status(404).json({ error: "La pulsera que intentas eliminar no existe." });
     }
     
-    res.json({ exito: true, mensaje: `🗑️ Pulsera ${idLimpio} y su historial fueron eliminados.` });
+    res.json({ exito: true, mensaje: `🗑️ Pulsera ${idLimpio} fue elimina con exito.` });
   } catch (err) {
     console.error("❌ Error en DELETE pulsera:", err.message);
     res.status(500).json({ error: "Error de base de datos al eliminar." });

@@ -3,8 +3,12 @@ import axios from 'axios';
 
 export default function Totem({ alSalir }) {
 
-  // 📡 TU SERVIDOR REAL DE PRODUCTION EN VIVO (CORREGIDO)
-const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.app");
+ // 📡 TU SERVIDOR DINÁMICO EN VIVO (CORREGIDO PARA ADMITIR EL CANAL MULTI-EVENTO DE TU APPS)
+  const [apiUrl] = useState(() => {
+    const canalActivo = localStorage.getItem('enlace_activo_easycashless');
+    // Si la memoria está vacía, usa el Evento 1 como ruta de respaldo predeterminada
+    return canalActivo || "https://sistema-nfc-monedero-production.up.railway.app";
+  });
   
   const [uidFiltro, setUidFiltro] = useState('');
   const [pulseraInfo, setPulseraInfo] = useState(null);
@@ -66,10 +70,8 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
   };
 
    // 🔒 FUNCIÓN DE CONSULTA PURIFICADA Y CORREGIDA
-  const consultarDatosTotem = async (uid) => {
+    const consultarDatosTotem = async (uid) => {
     if (!uid || !uid.trim()) return;
-    
-    // 🌟 El nombre correcto y unificado de la variable limpia
     const uidLimpio = uid.trim().toUpperCase();
     
     setCargando(true);
@@ -77,9 +79,10 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
     if (timerRef.current) clearTimeout(timerRef.current);
 
     try {
+      // Consulta directa a tu servidor de Railway
       const resPulseras = await axios.get(`${apiUrl}/pulseras?_nocache=${new Date().getTime()}`);
       
-      // 🌟 REPARACIÓN: Cambiamos cualquier rastro de uidInter por uidLimpio aquí abajo
+      // 🌟 CORRECCIÓN: Dejamos la comparación limpia y exacta sin variables fantasmas
       const pulseraMatch = resPulseras.data.find(p => 
         (p.codigo_nfc || p.codigo || '').trim().toUpperCase() === uidLimpio
       );
@@ -160,14 +163,14 @@ const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.ap
         </div>
       )}
 
-      {pulseraInfo && (
-        <div style={{ width: '100%', maxWidth: '450px', height: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ backgroundColor: '#1e293b', padding: '25px', borderRadius: '16px', border: '1px solid #334155', textAlign: 'center' }}>
+            {pulseraInfo && (
+        <div style={{ width: '100%', maxWidth: '450px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '100%', backgroundColor: '#1e293b', padding: '25px', borderRadius: '16px', border: '1px solid #334155', textAlign: 'center', boxSizing: 'border-box' }}>
             <span style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 'bold', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>TAG NFC LEÍDO</span>
             <h2 style={{ margin: 0, fontSize: '24px', color: '#f8fafc' }}>🆔 {pulseraInfo.codigo_nfc || pulseraInfo.codigo}</h2>
           </div>
 
-          <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', padding: '40px 20px', borderRadius: '24px', textAlign: 'center' }}>
+          <div style={{ width: '100%', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', padding: '40px 20px', borderRadius: '24px', textAlign: 'center', boxSizing: 'border-box' }}>
             <span style={{ fontSize: '14px', color: '#e0f2fe', fontWeight: '600' }}>SALDO DISPONIBLE</span>
             <div style={{ fontSize: '60px', fontWeight: '900', marginTop: '10px', color: '#ffffff' }}>
               ${parseFloat(pulseraInfo.saldo || 0).toFixed(2)}
