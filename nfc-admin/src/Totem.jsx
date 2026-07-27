@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 export default function Totem({ alSalir }) {
-  // 📡 TU SERVIDOR REAL DE PRODUCTION EN VIVO
-  // ⚠️ RECUERDA: Cambia esto por tu URL de Railway real (ej: https://tu-backend.up.railway.app)
-  const [apiUrl] = useState("https://railway.app");
+
+  // 📡 TU SERVIDOR REAL DE PRODUCTION EN VIVO (CORREGIDO)
+const [apiUrl] = useState("https://sistema-nfc-monedero-production.up.railway.app");
   
   const [uidFiltro, setUidFiltro] = useState('');
   const [pulseraInfo, setPulseraInfo] = useState(null);
@@ -65,8 +65,11 @@ export default function Totem({ alSalir }) {
     }, 8000); // 8 segundos de privacidad
   };
 
+   // 🔒 FUNCIÓN DE CONSULTA PURIFICADA Y CORREGIDA
   const consultarDatosTotem = async (uid) => {
     if (!uid || !uid.trim()) return;
+    
+    // 🌟 El nombre correcto y unificado de la variable limpia
     const uidLimpio = uid.trim().toUpperCase();
     
     setCargando(true);
@@ -74,11 +77,10 @@ export default function Totem({ alSalir }) {
     if (timerRef.current) clearTimeout(timerRef.current);
 
     try {
-      // Consulta directa a tu servidor de Railway
       const resPulseras = await axios.get(`${apiUrl}/pulseras?_nocache=${new Date().getTime()}`);
       
+      // 🌟 REPARACIÓN: Cambiamos cualquier rastro de uidInter por uidLimpio aquí abajo
       const pulseraMatch = resPulseras.data.find(p => 
-        (p.codigo_nfc || p.codigo || '').trim().toUpperCase() === uidLinter || 
         (p.codigo_nfc || p.codigo || '').trim().toUpperCase() === uidLimpio
       );
 

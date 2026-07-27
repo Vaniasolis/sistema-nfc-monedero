@@ -709,10 +709,12 @@ const obtenerTextoAcceso = (id) => {
               <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
             </div>
           </div>
-
-          {/* 📱 TABLA ADAPTADA CON TODAS LAS COLUMNAS REALES DE TU FOTO + ACCIÓN */}
-          <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box' }}>
-            <table border="1" cellPadding="4" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
+          
+          {/* 🌟 CAMBIO: Agregamos overflowX: 'auto' y WebkitOverflowScrolling para habilitar el deslizamiento en celular */}
+          <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            
+            {/* 🌟 CAMBIO: Le ponemos un minWidth de 550px a la tabla para asegurarnos de que los botones nunca se aplasten ni se corten */}
+            <table border="1" cellPadding="4" style={{ minWidth: '550px', width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#20c997', color: '#fff', fontSize: '12px' }}>
                   <th style={{ padding: '10px 4px' }}>ID NFC</th>
@@ -722,6 +724,7 @@ const obtenerTextoAcceso = (id) => {
                 </tr>
               </thead>
               <tbody>
+
                 {pulseras.map((p) => (
                   <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
                     
