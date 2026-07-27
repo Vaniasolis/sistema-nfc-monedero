@@ -700,53 +700,55 @@ const obtenerTextoAcceso = (id) => {
 
 
       {/* 🎟️ CONTENEDOR DE LA PESTAÑA DE PULSERAS AJUSTADO PARA EL BOTÓN FLOTANTE */}
-      {pestañaActiva === 'pulseras' && (
-        <div>
-          {/* Bloque Gris de Estadísticas */}
-          <div style={{ display: "flex", marginBottom: "15px" }}>
-            <div style={{ flex: 1, border: "1px solid #ced4da", padding: "15px", borderRadius: "8px", backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', textAlign: 'center' }}>
-              <h4 style={{ margin: 0, color: '#6c757d', fontSize: '14px', uppercase: 'true' }}>Total Pulseras</h4>
-              <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
-            </div>
-          </div>
-          
-          {/* 🌟 CAMBIO: Agregamos overflowX: 'auto' y WebkitOverflowScrolling para habilitar el deslizamiento en celular */}
-          <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            
-            {/* 🌟 CAMBIO: Le ponemos un minWidth de 550px a la tabla para asegurarnos de que los botones nunca se aplasten ni se corten */}
-            <table border="1" cellPadding="4" style={{ minWidth: '550px', width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#20c997', color: '#fff', fontSize: '12px' }}>
-                  <th style={{ padding: '10px 4px' }}>ID NFC</th>
-                  <th style={{ padding: '10px 4px' }}>Acceso</th>
-                  <th style={{ padding: '10px 4px' }}>Saldo</th>
-                  <th style={{ padding: '10px 4px', textAlign: 'center' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+{pestañaActiva === 'pulseras' && (
+  // 🌟 CORRECCIÓN CRÍTICA: Añadimos estilos aquí para frenar el estiramiento general en el celular
+  <div style={{ width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>
+    
+    {/* Bloque Gris de Estadísticas */}
+    <div style={{ display: "flex", marginBottom: "15px" }}>
+      <div style={{ flex: 1, border: "1px solid #ced4da", padding: "15px", borderRadius: "8px", backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+        <h4 style={{ margin: 0, color: '#6c757d', fontSize: '14px' }}>Total Pulseras</h4>
+        <h2 style={{ margin: '5px 0 0 0', color: '#212529' }}>{pulseras.length}</h2>
+      </div>
+    </div>
+    
+    {/* 📱 CONTENEDOR ENMASCARADO PARA EL SCROLL DE LA TABLA */}
+    <div style={{ width: '100%', margin: '12px 0', boxSizing: 'border-box', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      
+      {/* 📊 TABLA CON ANCHO MÍNIMO CÓMODO */}
+      <table border="1" cellPadding="4" style={{ minWidth: '550px', width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6', fontSize: '13px' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#20c997', color: '#fff', fontSize: '12px' }}>
+            <th style={{ padding: '10px 4px' }}>ID NFC</th>
+            <th style={{ padding: '10px 4px' }}>Acceso</th>
+            <th style={{ padding: '10px 4px' }}>Saldo</th>
+            <th style={{ padding: '10px 4px', textAlign: 'center' }}>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
 
-                {pulseras.map((p) => (
-                  <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
-                    
-                    {/* 🆔 COLUMNA ID NFC REDUCIDA SÓLO PARA QUE NO SE ROMPA EN EL CELULAR */}
-                  <td style={{ fontSize: '12px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
-                    {p.codigo_nfc || p.codigo}
-                  </td>
+          {pulseras.map((p) => (
+            <tr key={p.codigo_nfc} style={{ borderBottom: '1px solid #dee2e6' }}>
+              
+              {/* 🆔 COLUMNA ID NFC REDUCIDA SÓLO PARA QUE NO SE ROMPA EN EL CELULAR */}
+              <td style={{ padding: '10px 4px', fontSize: '12px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                {p.codigo_nfc || p.codigo}
+              </td>
 
-                  {/* 2️⃣ CAJÓN ACCESO (CORREGIDO CON TU TRADUCTOR DE IDS DE NEON) */}
-                  <td style={{ padding: '10px 4px', fontSize: '12px' }}>
-                    {obtenerTextoAcceso(p.tipo_acceso_id)}
-                  </td>
+              {/* 2️⃣ CAJÓN ACCESO (CORREGIDO CON TU TRADUCTOR DE IDS DE NEON) */}
+              <td style={{ padding: '10px 4px', fontSize: '12px' }}>
+                {obtenerTextoAcceso(p.tipo_acceso_id)}
+              </td>
 
-                  {/* 3️⃣ CAJÓN SALDO (Cae bajo el título Saldo) */}
-                  <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px', fontSize: '13px' }}>
-                    ${parseFloat(p.saldo || 0).toFixed(2)}
-                  </td>
+              {/* 3️⃣ CAJÓN SALDO (Cae bajo el título Saldo) */}
+              <td style={{ fontWeight: 'bold', color: '#28a745', padding: '10px 4px', fontSize: '13px' }}>
+                ${parseFloat(p.saldo || 0).toFixed(2)}
+              </td>
+              
+              {/* 4️⃣ CAJÓN ACCIONES (Cae bajo el título Acciones) */}
+              <td style={{ padding: '10px 4px', verticalAlign: 'middle' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
 
-                    
-                    {/* 4️⃣ CAJÓN ACCIONES (Cae bajo el título Acciones) */}
-                    <td style={{ padding: '10px 4px', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                         
                         {/* Botón A: Recargar Blindado con Contraseña de Supervisor */}
                         <button 
