@@ -233,14 +233,26 @@ app.delete('/pulseras/limpiar', async (req, res) => {
   }
 });
 
-/// 🪙 RUTA EXCLUSIVA: ENVIAR LAS PULSERAS DE NEON A LA PANTALLA
+// 1. MODIFICA TU RUTA ACTUAL DE OBTENER PULSERAS:
 app.get('/pulseras', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY fecha_registro DESC');
+    // 🌟 FILTRO MULTI-EVENTO: Solo descarga en la app las pulseras activas del canal actual
+    const resultado = await pool.query('SELECT * FROM pulseras WHERE activo = true ORDER BY id DESC');
     res.json(resultado.rows);
-  } catch (err) {
-    console.error("❌ Error en GET obtener pulseras:", err.message);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener pulseras' });
+  }
+});
+
+// 2. AGREGA ESTA NUEVA RUTA JUSTO ABAJO:
+app.put('/pulseras/finalizar-evento', async (req, res) => {
+  try {
+    // Apaga el estado activo únicamente de las pulseras del servidor que recibe la petición
+    await pool.query('UPDATE pulseras SET activo = false WHERE activo = true');
+    res.json({ mensaje: '✅ Evento finalizado. Base de datos resguardada con éxito.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'No se pudo finalizar el evento.' });
   }
 });
 
