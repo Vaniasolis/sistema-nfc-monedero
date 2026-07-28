@@ -247,15 +247,12 @@ app.get('/pulseras', async (req, res) => {
   }
 });
 
-// 🏁 FINALIZAR JORNADA DE EVENTO (OCULTAR REGISTROS DE LA APP)
+// 🏁 RUTA 100% SEGURA: SÓLO ACTUALIZA LA BANDERA ACTIVO SIN BORRAR FILAS
 app.put('/pulseras/finalizar-evento', async (req, res) => {
   try {
-    await pool.query(
-      'UPDATE pulseras SET activo = false WHERE activo = true'
-    );
-    res.json({ 
-      mensaje: '✅ Evento finalizado. Base de datos resguardada con éxito.' 
-    });
+    // 🔒 Cambiamos la instrucción por un UPDATE absoluto. Jamás usa DELETE.
+    await pool.query('UPDATE pulseras SET activo = false WHERE activo = true');
+    res.json({ mensaje: '✅ Interfaz limpia. Registros respaldados de forma histórica.' });
   } catch (error) {
     console.error('Error al finalizar el evento:', error);
     res.status(500).json({ error: 'No se pudo finalizar el evento.' });
