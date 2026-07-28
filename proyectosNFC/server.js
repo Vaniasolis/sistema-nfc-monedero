@@ -214,16 +214,19 @@ app.delete('/pulseras/eliminar/:id', async (req, res) => {
   }
 });
 
-// 🧹 6. RUTA REFORZADA: VACIAR ÚNICAMENTE EL CATÁLOGO DE BEBIDAS (SEGURO PARA EL EVENTO)
+// 🧹 6. RUTA REFORZADA: VACIAR ÚNICAMENTE EL CATÁLOGO DE BEBIDAS Y SUS DEPENDENCIAS
 app.delete('/productos/limpiar-catalogo', async (req, res) => {
   try {
-    // Borramos exclusivamente el catálogo de bebidas del canal activo
+    // 1. 🛡️ LIMPIEZA DE LLAVES: Borramos primero la bitácora de ventas para liberar la restricción
+    await pool.query('DELETE FROM ventas;');
+
+    // 2. Borramos ahora sí el catálogo completo de bebidas de forma segura
     await pool.query('DELETE FROM productos;');
     
-    // Reiniciamos el contador autoincremental de la tabla de productos a 1
+    // 3. Reiniciamos el contador autoincremental de la tabla de productos a 1
     await pool.query('ALTER SEQUENCE productos_id_seq RESTART WITH 1;');
     
-    res.json({ exito: true, mensaje: '🧹 Catálogo de productos vaciado con éxito. Contadores en 1.' });
+    res.json({ exito: true, mensaje: '🧹 Catálogo de productos y ventas vaciado con éxito. Contadores en 1.' });
   } catch (err) {
     console.error("❌ Error en DELETE limpiar catálogo Railway:", err.message);
     res.status(500).json({ error: "Error interno al intentar vaciar el catálogo de bebidas." });
