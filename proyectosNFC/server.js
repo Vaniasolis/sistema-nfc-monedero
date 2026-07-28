@@ -233,13 +233,10 @@ app.delete('/pulseras/limpiar', async (req, res) => {
   }
 });
 
-// 📊 OBTENER PULSERAS ACTIVAS DEL EVENTO (CORREGIDO SIN ID INEXISTENTE)
+// 📊 OBTENER PULSERAS (MUESTRA TODO LO QUE HAYA EN TIEMPO REAL)
 app.get('/pulseras', async (req, res) => {
   try {
-    // 🌟 REPARACIÓN: Ordenamos por 'codigo_nfc' que sí existe en tu base de datos de Neon
-    const resultado = await pool.query(
-      'SELECT * FROM pulseras WHERE activo IS NOT FALSE ORDER BY codigo_nfc DESC'
-    );
+    const resultado = await pool.query('SELECT * FROM pulseras ORDER BY codigo_nfc DESC');
     res.json(resultado.rows);
   } catch (error) {
     console.error('Error al obtener pulseras:', error);
@@ -247,18 +244,15 @@ app.get('/pulseras', async (req, res) => {
   }
 });
 
-// 🔒 RUTA REFORZADA: SÓLO ACTUALIZA LA BANDERA ACTIVO SIN BORRAR ABSOLUTAMENTE NADA
+// 🗑️ RUTA DE LIMPIEZA ABSOLUTA: BORRA TODO DE LA BASE DE DATOS AL FINALIZAR EL EVENTO
 app.put('/pulseras/finalizar-evento', async (req, res) => {
   try {
-    // Forzamos un UPDATE directo sobre la columna. Jamás usa la palabra DELETE.
-    await pool.query('UPDATE pulseras SET activo = false');
-    
-    res.json({ 
-      mensaje: '✅ Interfaz limpia. Registros respaldados de forma histórica.' 
-    });
+    // 💥 COMANDO DESTRUCIVO COMPLETO: Vacía la tabla por completo para el siguiente evento
+    await pool.query('DELETE FROM pulseras');
+    res.json({ mensaje: '🎉 Éxito. Base de datos vaciada por completo para el nuevo evento.' });
   } catch (error) {
-    console.error('Error crítico al finalizar el evento:', error);
-    res.status(500).json({ error: 'No se pudo finalizar el evento de forma segura.' });
+    console.error('Error al vaciar la base de datos:', error);
+    res.status(500).json({ error: 'No se pudo vaciar la tabla.' });
   }
 });
 
