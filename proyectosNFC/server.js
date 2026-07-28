@@ -247,15 +247,18 @@ app.get('/pulseras', async (req, res) => {
   }
 });
 
-// 🏁 RUTA 100% SEGURA: SÓLO ACTUALIZA LA BANDERA ACTIVO SIN BORRAR FILAS
+// 🔒 RUTA REFORZADA: SÓLO ACTUALIZA LA BANDERA ACTIVO SIN BORRAR ABSOLUTAMENTE NADA
 app.put('/pulseras/finalizar-evento', async (req, res) => {
   try {
-    // 🔒 Cambiamos la instrucción por un UPDATE absoluto. Jamás usa DELETE.
-    await pool.query('UPDATE pulseras SET activo = false WHERE activo = true');
-    res.json({ mensaje: '✅ Interfaz limpia. Registros respaldados de forma histórica.' });
+    // Forzamos un UPDATE directo sobre la columna. Jamás usa la palabra DELETE.
+    await pool.query('UPDATE pulseras SET activo = false');
+    
+    res.json({ 
+      mensaje: '✅ Interfaz limpia. Registros respaldados de forma histórica.' 
+    });
   } catch (error) {
-    console.error('Error al finalizar el evento:', error);
-    res.status(500).json({ error: 'No se pudo finalizar el evento.' });
+    console.error('Error crítico al finalizar el evento:', error);
+    res.status(500).json({ error: 'No se pudo finalizar el evento de forma segura.' });
   }
 });
 
