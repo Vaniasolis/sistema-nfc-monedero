@@ -236,8 +236,10 @@ app.delete('/pulseras/limpiar', async (req, res) => {
 // 📊 OBTENER PULSERAS ACTIVAS DEL EVENTO
 app.get('/pulseras', async (req, res) => {
   try {
+    // 🌟 CORRECCIÓN CRÍTICA: Cambiamos "WHERE activo = true" por "WHERE activo IS NOT FALSE"
+    // Esto acepta tanto los registros nuevos con TRUE como los registros viejos que tengan NULL
     const resultado = await pool.query(
-      'SELECT * FROM pulseras WHERE activo = true ORDER BY id DESC'
+      'SELECT * FROM pulseras WHERE activo IS NOT FALSE ORDER BY id DESC'
     );
     res.json(resultado.rows);
   } catch (error) {
