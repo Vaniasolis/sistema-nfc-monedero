@@ -29,24 +29,24 @@ const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
   const claveIntroducida = prompt('🔒 Introduzca el código maestro de administrador para cambiar de evento:');
   
   if (claveIntroducida === 'admin29') {
-    // 🌟 REPARACIÓN DE ORO: Forzamos el cambio en el estado de React
-    setApiUrlDinamica(nuevoEnlace);
-    
-    // Guardamos permanentemente el enlace activo en el disco para que no se pierda el canal
-    localStorage.setItem('enlace_activo_easycashless', nuevoEnlace);
-
-    // 🌟 TRUCO VISUAL: Limpiamos los datos del Evento 1 al instante para que no dejen fantasmas en el celular
-    if (typeof setPulseras === 'function') setPuleras([]);
+    // 🌟 REPARACIÓN 1: Limpiamos los datos visuales al instante ANTES de cualquier cambio
+    if (typeof setPulseras === 'function') setPulseras([]);
     if (typeof setProductos === 'function') setProductos([]);
+    
+    // Guardamos permanentemente el enlace activo en el disco
+    localStorage.setItem('enlace_activo_easycashless', nuevoEnlace);
+    
+    // Forzamos el cambio en el estado de React
+    setApiUrlDinamica(nuevoEnlace);
     
     alert('✅ Código correcto. Sintonizando nuevo canal de evento en la nube...');
 
-    // 🚀 INYECCIÓN COMERCIAL: Ejecutamos manualmente la recarga pasándole el enlace fresco
-    // Esto fuerza a que se active el bypass del local u cambien los productos en el acto
+    // 🌟 REPARACIÓN 2: Le pasamos el 'nuevoEnlace' directamente a las funciones de carga
+    // Esto rompe el retraso asíncrono y descarga el servidor correcto en el acto
     setTimeout(() => {
-      if (typeof cargarPulseras === 'function') cargarPulseras();
-      if (typeof cargarProductos === 'function') cargarProductos();
-    }, 200);
+      if (typeof cargarPulseras === 'function') cargarPulseras(nuevoEnlace);
+      if (typeof cargarProductos === 'function') cargarProductos(nuevoEnlace);
+    }, 100);
 
   } else {
     alert('❌ Código incorrecto. Acceso denegado.');
@@ -116,13 +116,13 @@ const cambiarCanalEvento = (nuevoEnlace, elementoSelect) => {
     };
   }, [apiUrlDinamica]); // 🚀 Se ejecuta al arrancar y cada vez que cambias de Evento en el menú superior
 
-  // 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
-const cargarPulseras = async () => {
+  /// 🎟️ FUNCIÓN CORRECTA PARA LEER LAS PULSERAS DESDE RAILWAY
+const cargarPulseras = async (enlaceAlternativo) => {
   try { 
-    // 🌟 FORZAMOS TU URL REAL DE RAILWAY DIRECTA PARA EVITAR CAÍDAS DE RED EN EL APK
-    const enlaceReal = "https://sistema-nfc-monedero-production.up.railway.app";
+    // 🌟 TRUCO DE ORO: Si le pasamos un enlace fresco desde el selector, usa ese. Si no, usa el global de React.
+    const urlBaseTrabajo = enlaceAlternativo || apiUrlDinamica;
     
-    const res = await axios.get(`${apiUrlDinamica}/pulseras?_nocache=${new Date().getTime()}`, {
+    const res = await axios.get(`${urlBaseTrabajo}/pulseras?_nocache=${new Date().getTime()}`, {
       timeout: 7000 // ⏱️ Si en 7 segundos no responde internet, aborta de forma segura sin congelar la app
     }); 
     
@@ -169,9 +169,12 @@ const cargarPulseras = async () => {
 };
 
 // 🍺 FUNCIÓN DE CARGA DE BEBIDAS DINÁMICA ULTRA-BLINDADA
-const cargarProductos = async () => {
+const cargarProductos = async (enlaceAlternativo) => {
   try {
-    const res = await axios.get(`${apiUrlDinamica}/productos`);
+    // 🌟 TRUCO DE VELOCIDAD: Si el selector de canal le inyecta un enlace fresco, usa ese en el acto
+    const urlBaseTrabajo = enlaceAlternativo || apiUrlDinamica;
+    
+    const res = await axios.get(`${urlBaseTrabajo}/productos`);
     if (Array.isArray(res.data)) {
       setProductos(res.data);
       console.log("📡 MÓDULO SINCRO: Catálogo de bebidas descargado con éxito desde Railway.");
@@ -848,7 +851,7 @@ const obtenerTextoAcceso = (id) => {
 
         try {
           const res = await axios.delete(`${apiUrlDinamica}/pulseras/eliminar/${p.codigo_nfc}`);
-          
+
           alert(res.data.mensaje || '🗑️ Pulsera eliminada correctamente.');
           cargarPulseras(); 
         } catch (e) {
@@ -1136,11 +1139,8 @@ const obtenerTextoAcceso = (id) => {
               }}
               style={{ width: '100%', padding: '14px', borderRadius: '4px', border: '1px solid #475569', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: '#ffffff', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
             >
-              🔍 Consultar Saldo NFC
+              🔍 Consultar Historal Pulsera
             </button>
-
-
-
             </form>
           </div>
 
@@ -1149,25 +1149,69 @@ const obtenerTextoAcceso = (id) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
               <h3 style={{ margin: 0, color: '#212529' }}>🍺 Catálogo de Productos</h3>
               <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                <button type="button" onClick={async () => {
-                  const c1 = window.confirm("¿Estás SEGURO de que deseas finalizar el evento? Esto borrará todas las pulseras, productos e historial.");
-                  if (!c1) return;
-                  const c2 = prompt("Ingresa contraseña para eliminar registros");
-                  if (c2 !== "admin29") { alert("Confirmación incorrecta."); return; }
-                   try {
-                    // 🌟 CORREGIDO AQUÍ: Cambiamos el .post viejo por .delete y apuntamos a /pulseras/limpiar
-                    const res = await axios.delete(`${apiUrlDinamica}/pulseras/limpiar`);
-                    alert(res.data.mensaje || '🧹 Evento reiniciado con éxito.');
-                    cargarPulseras(); 
-                    cargarProductos();
-                  } catch (err) { 
-                    alert("Error al intentar reiniciar el sistema."); 
-                  }
-                }} 
-                style={{ flex: 1, padding: '12px 8px', backgroundColor: 'rgb(95, 53, 220)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>🧹 Limpiar Evento</button>
-                <button type="button" onClick={() => setMostrarModalProducto(true)} style={{ flex: 1, padding: '12px 8px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>➕ Añadir Bebida</button>
+                
+                {/* 🧹 BOTÓN MORADO DE REGISTRAR COBRO: LIMPIAR EXCLUSIVAMENTE BEBIDAS */}
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    const c1 = window.confirm("¿Estás SEGURO de que deseas vaciar el catálogo? Esto borrará únicamente las bebidas y reiniciará los contadores.");
+                    if (!c1) return;
+                    
+                    const c2 = prompt("Ingresa contraseña administrativa para eliminar registros:");
+                    if (c2 !== "admin29") { 
+                      alert("Confirmación incorrecta."); 
+                      return; 
+                    }
+                    
+                    try {
+                      // 🌟 RUTA SEGURA ACTIVADA: Apuntamos al endpoint correcto de productos
+                      const res = await axios.delete(`${apiUrlDinamica}/productos/limpiar-catalogo`);
+                      alert(res.data.mensaje || '🧹 Catálogo reiniciado con éxito.');
+                      
+                      // Refrescamos la lista de bebidas en el Punto de Venta
+                      if (typeof cargarProductos === 'function') cargarProductos();
+                    } catch (err) { 
+                      alert("Error al intentar reiniciar el catálogo de productos."); 
+                    }
+                  }} 
+                  style={{ 
+                    flex: 1, 
+                    padding: '12px 8px', 
+                    backgroundColor: 'rgb(95, 53, 220)', 
+                    color: 'white', 
+                    border: 'none', 
+                    borderRadius: '6px', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    fontSize: '13px' 
+                  }}
+                >
+                  ✔ Limpiar Evento
+                </button>
+
+                  
+                {/* ➕ BOTÓN VERDE: AÑADIR BEBIDA */}
+                <button 
+                  type="button" 
+                  onClick={() => setMostrarModalProducto(true)} 
+                  style={{ 
+                    flex: 1, 
+                    padding: '12px 8px', 
+                    backgroundColor: '#28a745', 
+                    color: 'white', 
+                    border: 'none', 
+                    borderRadius: '6px', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    fontSize: '13px' 
+                  }}
+                >
+                  ➕ Añadir Bebida
+                </button>
+
               </div>
             </div>
+
 
             <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', borderColor: '#dee2e6' }}>
               <thead>
@@ -1214,25 +1258,27 @@ const obtenerTextoAcceso = (id) => {
                 {/* ✅ VERSIÓN REPARADA, ESTABLE Y COMPATIBLE CON TU CÓDIGO */}
             
             {/* 🎟️ CORRECCIÓN INDESTRUCTIBLE DE LAS OPCIONES DEL MENÚ */}
-              <select 
+         <select 
           id="tipoAccesoId"
           name="tipoAccesoId"
           value={typeof tipoAccesoId !== 'undefined' ? tipoAccesoId : ''} 
           onChange={(e) => {
-            const valorNumerico = Number(e.target.value); 
+            const valorTexto = e.target.value; 
             if (typeof setTipoAccesoId === 'function') {
-              setTipoAccesoId(valorNumerico);
+              setTipoAccesoId(valorTexto);
             } else if (typeof setTipoAcceso === 'function') {
-              setTipoAcceso(valorNumerico);
+              setTipoAcceso(valorTexto);
             }
           }}
           style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#fff', color: '#334155', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 'bold', display: 'block', marginTop: '5px' }}
         >
-          <option value="1">General</option>
-          <option value="2">VIP</option>
-          <option value="3">Backstage</option> {/* 🌟 AGREGADO CON SU ID REAL 3 */}
-          <option value="4">Staff</option>
-          <option value="5">Cortesia</option>
+          <option value="">-- Seleccione un acceso (Por defecto: General) --</option>
+          <option value="General">General</option>
+          <option value="Cover">Cover</option> -- 🚀 🌟 INYECCIÓN DE ORO: Agregamos la opción faltante
+          <option value="VIP">VIP</option>
+          <option value="Backstage">Backstage</option>
+          <option value="Staff">Staff</option>
+          <option value="Cortesia">Cortesia</option>
         </select>
 
               </div>
@@ -1394,7 +1440,55 @@ const obtenerTextoAcceso = (id) => {
                       </button>
                     )}
 
+                      {/* 3️⃣ BOTÓN MODO TÓTEM */}
+                      <button 
+                        onClick={() => setActivarModoTotem(true)} 
+                        style={{flex: '1 1 100px', minWidth: '100px', padding: '12px 6px', cursor: 'pointer', fontSize: '14px', backgroundColor: '#1e293b', color: '#38bdf8', border: '1px solid #334155', 
+                          borderRadius: '6px', fontWeight: 'bold', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'normal', wordBreak: 'break-word'}}>
+                        🖥️ Modo Tótem
+                      </button>
 
+                      {/* 🏁 4️⃣ BOTÓN MULTI-EVENTO: FINALIZAR JORNADA (INTEGRADO AL FINAL DE LA FILA) */}
+                      <button
+                        onClick={async () => {
+                          const canalNombre = apiUrlDinamica.includes('copy-1') ? 'EVENTO 2 (RESPALDO)' : 'EVENTO 1 (PRODUCCIÓN)';
+                          
+                          const clave = prompt(`⚠️ ACCIÓN CRÍTICA PARA ${canalNombre}:\nIntroduzca la clave maestra para FINALIZAR ESTE EVENTO y limpiar la interfaz:`);
+                          if (clave !== 'admin29') {
+                            alert('❌ Clave incorrecta. Acción cancelada.');
+                            return;
+                          }
+                          
+                          if (!window.confirm(`¿Estás completamente seguro de finalizar el ${canalNombre}? Las etiquetas se ocultarán de la app pero sus saldos e historial quedarán protegidos en su base de datos correspondiente de Neon.`)) {
+                            return;
+                          }
+                          
+                          try {
+                            await axios.put(`${apiUrlDinamica}/pulseras/finalizar-evento`);
+                            alert(`🎉 ¡El ${canalNombre} ha sido finalizado! Interfaz limpia para nuevas etiquetas.`);
+                            cargarPulseras(); 
+                          } catch (e) {
+                            alert('No se pudo conectar con el servidor seleccionado para limpiar la interfaz.');
+                          }
+                        }}
+                        style={{
+                          flex: '1 1 100px', 
+                          minWidth: '100px', 
+                          padding: '12px 6px', 
+                          cursor: 'pointer', 
+                          fontSize: '14px', 
+                          backgroundColor: '#64748b', // Color gris corporativo para distinguir que es una acción administrativa
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '6px', 
+                          fontWeight: 'bold', 
+                          transition: 'all 0.2s', 
+                          whiteSpace: 'normal', 
+                          wordBreak: 'break-word'
+                        }}
+                      >
+                        🏁 Finalizar Evento
+                      </button>
                   </div>
                 </div>
               ))}
