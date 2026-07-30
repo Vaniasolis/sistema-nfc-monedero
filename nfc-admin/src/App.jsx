@@ -1272,7 +1272,7 @@ const obtenerTextoAcceso = (id) => {
           }}
           style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#fff', color: '#334155', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: 'bold', display: 'block', marginTop: '5px' }}
         >
-          <option value="">-- Seleccione un acceso</option>
+          <option value="">Seleccione un acceso</option>
           <option value="General">General</option>
           <option value="Cover">Cover</option> -- 🚀 🌟 INYECCIÓN DE ORO: Agregamos la opción faltante
           <option value="VIP">VIP</option>
