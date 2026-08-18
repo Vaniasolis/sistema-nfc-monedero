@@ -58,6 +58,17 @@ app.post('/pulseras', async (req, res) => {
   }
   const uidBuscar = codigo_nfc.trim().toUpperCase();
 
+   // 🚀 CONVERSIÓN DE SEGURIDAD: Convertimos la palabra del select al ID entero de tu Neon SQL
+  const palabraLimpia = String(tipo_pulsera || tipo_acceso || '').trim().toLowerCase();
+  let idNumericoAcceso = 1; // Por defecto ID 1 (General)
+
+  if (palabraLimpia === '2' || palabraLimpia === 'vip') idNumericoAcceso = 2;
+  if (palabraLimpia === '3' || palabraLimpia === 'cover') idNumericoAcceso = 3;
+  if (palabraLimpia === '4' || palabraLimpia === 'backstage') idNumericoAcceso = 4;
+  if (palabraLimpia === '5' || palabraLimpia === 'cortesia') idNumericoAcceso = 5;
+  if (palabraLimpia === '6' || palabraLimpia === 'staff') idNumericoAcceso = 6;
+  if (palabraLimpia === 'general') idNumericoAcceso = 1;
+
   try {
     // 🌟 1. CANDADO DE EXISTENCIA: Busca usando tu columna real "codigo_nfc"
     const consultaExistencia = await pool.query(
@@ -73,10 +84,10 @@ app.post('/pulseras', async (req, res) => {
       });
     }
 
-    // 🌟 INSERCIÓN REPARADA: Leemos "saldo_inicial" o "saldo" para que capte el dinero del formulario
+    // 🌟 INSERCIÓN REPARADA: Leemos "saldo_inicial" o "saldo" e inyectamos 'idNumericoAcceso' en la columna tipo_acceso_id
     const nuevoRegistro = await pool.query(
       'INSERT INTO pulseras (codigo_nfc, saldo, tipo_acceso_id) VALUES ($1, $2, $3) RETURNING *',
-      [uidBuscar, saldo_inicial || req.body.saldo || 0, tipo_pulsera || 1]
+      [uidBuscar, saldo_inicial || req.body.saldo || 0, idNumericoAcceso] // 🚀 ¡Inyectamos el número limpio!
     );
 
     return res.status(201).json({
